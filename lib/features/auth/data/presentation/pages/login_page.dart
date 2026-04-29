@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/colors.dart';
+import 'package:ikanku/core/constants/colors.dart';
 
 class LoginPage extends StatelessWidget {
   @override
