@@ -1,120 +1,48 @@
-name: Build Release APK
+name: Flutter CI/CD
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
-  workflow_dispatch:
-    inputs:
-      version_name:
-        description: 'Version name (contoh: 1.0.0)'
-        required: false
-        default: '1.0.0'
-
-permissions:
-  contents: write
+    branches: [ main ]
+  pull_request:
 
 jobs:
-  build-apk:
-    name: Build & Release APK
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # 2. Setup Java
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
+      - uses: subosito/flutter-action@v2
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          flutter-version: '3.19.0'
 
-      # 3. Setup Flutter (UPDATED biar cocok Dart terbaru)
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/cache@v4
         with:
-          flutter-version: '3.41.0'
-          channel: 'stable'
-          cache: true
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
 
-      # 4. Check environment
-      - name: Flutter Doctor
-        run: flutter doctor -v
+      - run: flutter pub get
 
-      # 5. Install dependencies
-      - name: Install Dependencies
-        run: flutter pub get
+      - run: flutter test
 
-      # 6. Analyze (opsional)
-      - name: Flutter Analyze
-        run: echo "test"
+      - run: flutter build apk --release
 
-      # 7. Build APK
-      - name: Build APK Release
-        run: 
-          flutter build apk \
-          --release \
-          --spilt-per-abi
-
-      # 8. Rename APK
-      - name: Rename APKs
-        run: |
-          VERSION="${{ github.ref_name }}"
-          if [ -z "$VERSION" ] || [ "$VERSION" = "refs/heads/main" ]; then
-            VERSION="v${{ github.event.inputs.version_name || '1.0.0' }}"
-          fi
-
-          mkdir -p release-apk
-
-          for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
-            ARCH=$(echo "$apk" | grep -oP '(?<=app-).*(?=-release)')
-            cp "$apk" "release-apk/app-${VERSION}-${ARCH}.apk"
-          done
-
-          ls -lh release-apk/
-
-      # 9. Upload Artifact
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: release-apks
-          path: release-apk/*.apk
-          retention-days: 30
+          name: apk
+          path: build/app/outputs/flutter-apk/app-release.apk
 
-      # 10. Create GitHub Release (hanya saat tag)
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          name: "Release ${{ github.ref_name }}"
-          files: release-apk/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 11. Test Telegram (opsional, debug awal)
-      - name: Test Telegram
-        run: |
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="✅ CI berjalan: build dimulai"
-
-      # 12. Send APK ke Telegram
       - name: Send APK to Telegram
         if: success()
         run: |
-          for apk in release-apk/*.apk; do
-            curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument" \
-              -F "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-              -F "document=@${apk}" \
-              -F "caption=📦 APK berhasil di-build"
-          done
+          curl -X POST https://api.telegram.org/bot${{ 8685432167:AAERln0FxmKoGPNDKqaTmX5Q_LWINSmIbGk }}/sendDocument \
+          -F chat_id=${{ 5091878681 }} \
+          -F document=@build/app/outputs/flutter-apk/app-release.apk \
+          -F caption="✅ APK berhasil di-build"
 
-      # 13. Notify jika gagal
       - name: Notify Failed
         if: failure()
         run: |
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="❌ Build gagal di GitHub Actions"
+          curl -s -X POST https://api.telegram.org/bot${{ 8685432167:AAERln0FxmKoGPNDKqaTmX5Q_LWINSmIbGk }}/sendMessage \
+          -d chat_id=${{ 5091878681 }} \
+          -d text="❌ Build gagal"
