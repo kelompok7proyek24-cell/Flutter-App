@@ -23,7 +23,7 @@ dependencies {
 android {
     namespace = "com.example.ikanku"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
