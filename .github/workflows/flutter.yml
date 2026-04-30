@@ -35,14 +35,14 @@ jobs:
       - name: Send APK to Telegram
         if: success()
         run: |
-          curl -X POST https://api.telegram.org/bot${{ 8685432167:AAERln0FxmKoGPNDKqaTmX5Q_LWINSmIbGk }}/sendDocument \
-          -F chat_id=${{ 5091878681 }} \
+          curl -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument \
+          -F chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -F document=@build/app/outputs/flutter-apk/app-release.apk \
           -F caption="✅ APK berhasil di-build"
 
       - name: Notify Failed
         if: failure()
         run: |
-          curl -s -X POST https://api.telegram.org/bot${{ 8685432167:AAERln0FxmKoGPNDKqaTmX5Q_LWINSmIbGk }}/sendMessage \
-          -d chat_id=${{ 5091878681 }} \
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d text="❌ Build gagal"
