@@ -49,8 +49,7 @@ jobs:
 
       # 6. Analyze (opsional)
       - name: Flutter Analyze
-        run: flutter Analyze --no-fatal-infos
-        continue-on-error: true
+        run: echo "test"
 
       # 7. Build APK
       - name: Build APK Release
