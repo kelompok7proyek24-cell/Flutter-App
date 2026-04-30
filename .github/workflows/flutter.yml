@@ -3,8 +3,8 @@ name: Build Release APK
 on:
   push:
     tags:
-      - 'v*.*.*'          # Trigger saat push tag, contoh: v1.0.0
-  workflow_dispatch:       # Bisa dijalankan manual dari GitHub Actions tab
+      - 'v*.*.*'
+  workflow_dispatch:
     inputs:
       version_name:
         description: 'Version name (contoh: 1.0.0)'
@@ -20,60 +20,63 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ── 1. Checkout source code ──────────────────────────────────────
+      # 1. Checkout
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ── 2. Setup Java (diperlukan Android build tools) ───────────────
+      # 2. Setup Java
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # ── 3. Setup Flutter ─────────────────────────────────────────────
+      # 3. Setup Flutter (UPDATED biar cocok Dart terbaru)
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
+          flutter-version: '3.41.0'
           channel: 'stable'
           cache: true
 
-      # ── 4. Verifikasi instalasi ───────────────────────────────────────
+      # 4. Check environment
       - name: Flutter Doctor
         run: flutter doctor -v
 
-      # ── 6. Install dependencies ───────────────────────────────────────
-      - name: Flutter Pub Get
+      # 5. Install dependencies
+      - name: Install Dependencies
         run: flutter pub get
 
-      # ── 7. Analisis kode (opsional, hapus jika ingin skip) ───────────
+      # 6. Analyze (opsional)
       - name: Flutter Analyze
         run: flutter analyze --no-fatal-infos
         continue-on-error: true
-			
-			# ── 10. Build APK release ─────────────────────────────────────────
+
+      # 7. Build APK
       - name: Build APK Release
         run: |
           flutter build apk \
             --release \
             --split-per-abi
 
-      # ── 11. Rename APK dengan versi ───────────────────────────────────
+      # 8. Rename APK
       - name: Rename APKs
         run: |
           VERSION="${{ github.ref_name }}"
           if [ -z "$VERSION" ] || [ "$VERSION" = "refs/heads/main" ]; then
             VERSION="v${{ github.event.inputs.version_name || '1.0.0' }}"
           fi
+
           mkdir -p release-apk
+
           for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
             ARCH=$(echo "$apk" | grep -oP '(?<=app-).*(?=-release)')
-            cp "$apk" "release-apk/pos-harian-${VERSION}-${ARCH}.apk"
+            cp "$apk" "release-apk/app-${VERSION}-${ARCH}.apk"
           done
+
           ls -lh release-apk/
 
-      # ── 12. Upload APK sebagai artifact (selalu tersedia) ─────────────
+      # 9. Upload Artifact
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -81,96 +84,38 @@ jobs:
           path: release-apk/*.apk
           retention-days: 30
 
-      # ── 13. Buat GitHub Release (hanya saat push tag) ─────────────────
+      # 10. Create GitHub Release (hanya saat tag)
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          name: "POS Harian ${{ github.ref_name }}"
-          body: |
-            ## 📦 POS Harian ${{ github.ref_name }}
-
-            ### Download APK
-            Pilih sesuai arsitektur perangkat Anda:
-            - **arm64-v8a** → HP modern (64-bit), direkomendasikan
-            - **armeabi-v7a** → HP lama (32-bit)
-            - **x86_64** → Emulator / PC
-
-            ### Cara Install
-            1. Download APK sesuai arsitektur
-            2. Aktifkan *Install from unknown sources* di pengaturan HP
-            3. Buka file APK dan install
-
-            ### Changelog
-            ${{ github.event.head_commit.message }}
+          name: "Release ${{ github.ref_name }}"
           files: release-apk/*.apk
-          draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 14. Kirim APK ke Telegram ─────────────────────────────────────
-      - name: Send APK to Telegram
+      # 11. Test Telegram (opsional, debug awal)
+      - name: Test Telegram
         run: |
-          VERSION="${{ github.ref_name }}"
-          if [ -z "$VERSION" ] || [ "$VERSION" = "refs/heads/main" ]; then
-            VERSION="v${{ github.event.inputs.version_name || '1.0.0' }}"
-          fi
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="✅ CI berjalan: build dimulai"
 
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
-          COMMIT_AUTHOR="${{ github.event.head_commit.author.name }}"
-          COMMIT_SHA="${{ github.sha }}"
-          SHORT_SHA="${COMMIT_SHA:0:7}"
-          BUILD_TIME=$(date '+%d %b %Y %H:%M UTC')
-          REPO="${{ github.repository }}"
-          RUN_URL="https://github.com/${REPO}/actions/runs/${{ github.run_id }}"
-
-          # Susun caption
-          CAPTION="📦 *POS Harian ${VERSION}*
-
-          🏷️ *Versi:* \`${VERSION}\`
-          🔖 *Commit:* \`${SHORT_SHA}\`
-          ✍️ *Author:* ${COMMIT_AUTHOR}
-          🕐 *Build:* ${BUILD_TIME}
-
-          📝 *Changelog:*
-          \`\`\`
-          ${COMMIT_MSG}
-          \`\`\`
-
-          📱 *Pilih APK sesuai perangkat:*
-          - \`arm64-v8a\` → HP modern 64-bit ✅
-          - \`armeabi-v7a\` → HP lama 32-bit
-          - \`x86_64\` → Emulator
-
-          🔗 [Lihat Build Log](${RUN_URL})"
-
-          # Kirim setiap file APK
+      # 12. Send APK ke Telegram
+      - name: Send APK to Telegram
+        if: success()
+        run: |
           for apk in release-apk/*.apk; do
-            FILENAME=$(basename "$apk")
-
-            # Tentukan label arsitektur
-            if [[ "$FILENAME" == *"arm64-v8a"* ]]; then
-              ARCH_LABEL="arm64-v8a (Rekomendasi)"
-            elif [[ "$FILENAME" == *"armeabi-v7a"* ]]; then
-              ARCH_LABEL="armeabi-v7a (HP Lama)"
-            elif [[ "$FILENAME" == *"x86_64"* ]]; then
-              ARCH_LABEL="x86_64 (Emulator)"
-            else
-              ARCH_LABEL="Universal"
-            fi
-
-            FILE_SIZE=$(du -sh "$apk" | cut -f1)
-
-            curl -s -X POST "https://api.telegram.org/bot${{ 8685432167:AAERln0FxmKoGPNDKqaTmX5Q_LWINSmIbGk }}/sendDocument" \
-              -F "chat_id=${{ 5091878681 }}" \
+            curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument" \
+              -F "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
               -F "document=@${apk}" \
-              -F "caption=${CAPTION}
-
-                📂 *File:* \`${FILENAME}\`
-                🏗️ *Arsitektur:* ${ARCH_LABEL}
-                💾 *Ukuran:* ${FILE_SIZE}" \
-              -F "parse_mode=Markdown"
-            echo "Sent: $FILENAME"
-            sleep 1
+              -F "caption=📦 APK berhasil di-build"
           done
+
+      # 13. Notify jika gagal
+      - name: Notify Failed
+        if: failure()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="❌ Build gagal di GitHub Actions"
