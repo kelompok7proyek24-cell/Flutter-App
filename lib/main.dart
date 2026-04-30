@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/constants/colors.dart';
+import 'package:firebase_core/firebase_core.dart';
 // Sesuaikan import di bawah dengan path folder kamu
 import 'package:ikanku/features/auth/data/presentation/pages/login_page.dart'; 
 import 'package:ikanku/features/home/presentation/pages/home_page.dart';

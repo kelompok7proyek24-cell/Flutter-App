@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  firebase_core: ^3.0.0 # Tambahkan ini
+  firebase_auth: ^5.0.0 # Untuk fitur login kamu
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

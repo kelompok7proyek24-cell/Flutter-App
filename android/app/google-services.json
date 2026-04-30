@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "247313774062",
+    "project_id": "ikankuid-68253",
+    "storage_bucket": "ikankuid-68253.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:247313774062:android:16e3409732bcc07f30caff",
+        "android_client_info": {
+          "package_name": "com.example.ikanku"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNrXLR4Pb_rXXvpUrK1lyQ8bRca0DIZdk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
