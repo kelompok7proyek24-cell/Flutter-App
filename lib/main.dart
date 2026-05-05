@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart'; //
 import 'core/constants/colors.dart';
-import 'package:firebase_core/firebase_core.dart';
-// Sesuaikan import di bawah dengan path folder kamu
-import 'package:ikanku/features/auth/data/presentation/pages/login_page.dart'; 
-import 'package:ikanku/features/home/presentation/pages/home_page.dart';
+import 'features/auth/data/presentation/pages/login_page.dart'; 
+import 'features/home/presentation/pages/home_page.dart';
 
-void main() {
+// Analisis Arcane: Mengubah main menjadi Future agar sistem bisa "menunggu" Firebase
+void main() async {
+  // 1. Memastikan komunikasi antar-platform (Android/Native) siap
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 2. Inisialisasi Firebase menggunakan konfigurasi google-services.json
+  await Firebase.initializeApp();
+
   runApp(const IkankuApp());
 }
 
@@ -18,11 +24,9 @@ class IkankuApp extends StatelessWidget {
       title: 'Ikanku.id',
       debugShowCheckedModeBanner: false,
       
-      // Mengatur Tema Global (Fitur Dasar Sistem)
       theme: ThemeData(
         primaryColor: AppColors.primaryBlue,
         scaffoldBackgroundColor: Colors.white,
-        fontFamily: 'Sans-Serif', // Pastikan font sudah terdaftar jika ada
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           elevation: 0,
@@ -31,10 +35,8 @@ class IkankuApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryBlue),
       ),
 
-      // Menentukan halaman awal aplikasi
-      // Analisis Arcane: Gunakan LoginPage() untuk alur autentikasi 
-      // atau HomePage() jika ingin langsung melihat beranda.
-      home: LoginPage(), 
+      // Analisis Arcane: Pintu masuk utama sistem adalah LoginPage()
+      home: HomePage(), 
     );
   }
 }
