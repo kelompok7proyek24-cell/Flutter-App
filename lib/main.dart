@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; //
-import 'core/constants/colors.dart';
-import 'features/auth/data/presentation/pages/login_page.dart'; 
+import 'core/constants/colors.dart'; 
 import 'features/home/presentation/pages/home_page.dart';
 
 // Analisis Arcane: Mengubah main menjadi Future agar sistem bisa "menunggu" Firebase
