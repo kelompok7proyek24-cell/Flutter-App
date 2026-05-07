@@ -52,7 +52,7 @@ jobs:
         run: flutter analyze --no-fatal-infos
         continue-on-error: true
 			
-			# ── 10. Build APK release ─────────────────────────────────────────
+      # ── 10. Build APK release ─────────────────────────────────────────
       - name: Build APK Release
         run: |
           flutter build apk \
