@@ -1,16 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart'; //
-import 'core/constants/colors.dart'; 
+import 'core/constants/colors.dart';
 import 'features/home/presentation/pages/home_page.dart';
 
-// Analisis Arcane: Mengubah main menjadi Future agar sistem bisa "menunggu" Firebase
-void main() async {
-  // 1. Memastikan komunikasi antar-platform (Android/Native) siap
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // 2. Inisialisasi Firebase menggunakan konfigurasi google-services.json
-  await Firebase.initializeApp();
-
+void main() {
   runApp(const IkankuApp());
 }
 
@@ -22,20 +14,71 @@ class IkankuApp extends StatelessWidget {
     return MaterialApp(
       title: 'Ikanku.id',
       debugShowCheckedModeBanner: false,
-      
+
       theme: ThemeData(
         primaryColor: AppColors.primaryBlue,
+
         scaffoldBackgroundColor: Colors.white,
+
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primaryBlue,
+        ),
+
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           elevation: 0,
-          iconTheme: IconThemeData(color: AppColors.primaryBlue),
+          centerTitle: true,
+          iconTheme: IconThemeData(
+            color: AppColors.primaryBlue,
+          ),
+          titleTextStyle: TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryBlue),
+
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryBlue,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.grey.shade100,
+
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: AppColors.primaryBlue,
+              width: 1.5,
+            ),
+          ),
+        ),
       ),
 
-      // Analisis Arcane: Pintu masuk utama sistem adalah LoginPage()
-      home: HomePage(), 
+      home: HomePage(),
     );
   }
 }
