@@ -1,8 +1,8 @@
-// settings_page.dart
+// lib/features/profile/presentation/pages/settings_page.dart
 
 import 'package:flutter/material.dart';
 import 'edit_profile_page.dart';
-
+import 'package:ikanku/features/seller/presentation/pages/seller_registration_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -21,45 +21,88 @@ class SettingsPage extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         child: Column(
           children: [
-            _settingItem(Icons.storefront, "Seller Center"),
-            _settingItem(Icons.notifications_none, "Notifikasi"),
-            _settingItem(Icons.person_outline, "Akun"),
-            _settingItem(Icons.palette_outlined, "Tampilan"),
+            // KONEKSI KE SELLER CENTER
+            _settingItem(
+              Icons.storefront, 
+              "Seller Center", 
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SellerRegistrationPage()),
+                );
+              },
+            ),
+            
+            _settingItem(
+              Icons.notifications_none, 
+              "Notifikasi",
+              onTap: () {
+                // Tambahkan aksi jika perlu
+              },
+            ),
+            
+            _settingItem(
+              Icons.person_outline, 
+              "Akun",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                );
+              },
+            ),
+            
+            _settingItem(
+              Icons.palette_outlined, 
+              "Tampilan",
+              onTap: () {},
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _settingItem(IconData icon, String title) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 18,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.blue),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
+  // Menambahkan parameter VoidCallback onTap agar bisa diklik
+  Widget _settingItem(IconData icon, String title, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap, // Menjalankan fungsi navigasi saat ditekan
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.blue),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
-          const Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: Colors.grey,
-          ),
-        ],
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey,
+            ),
+          ],
+        ),
       ),
     );
   }

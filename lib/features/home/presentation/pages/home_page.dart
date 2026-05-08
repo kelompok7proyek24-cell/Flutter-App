@@ -4,6 +4,7 @@ import '../../../../core/constants/colors.dart';
 import 'package:ikanku/features/profile/presentation/pages/profile_page.dart'; // Import halaman profil
 import 'package:ikanku/features/profile/presentation/pages/settings_page.dart'; // Import halaman settings
 import 'package:ikanku/features/home/widgets/fish_card.dart';
+import 'package:ikanku/features/product/presentation/pages/product_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,7 +25,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _pages = [
       _buildHomeContent(), // Index 0: Konten Beranda
-      const Center(child: Text("Halaman Produk")), // Index 1
+      const ProductPage(), // Index 1
       const Center(child: Text("Halaman Artikel")), // Index 2
       const Center(child: Text("Halaman Keranjang")), // Index 3
       const ProfilePage(), // Index 4: Halaman Akun

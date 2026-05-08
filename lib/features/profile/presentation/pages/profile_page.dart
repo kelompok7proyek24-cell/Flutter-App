@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'settings_page.dart';
-import 'edit_profile_page.dart';
+// import 'edit_profile_page.dart'; // Aktifkan jika diperlukan
 import '../widgets/profile_menu_item.dart';
 import '../widgets/order_status_card.dart';
 
@@ -11,11 +11,14 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // KITA TETAP MENGGUNAKAN SCAFFOLD, TAPI HAPUS bottomNavigationBar-nya
     return Scaffold(
       backgroundColor: const Color(0xffF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        // Center title agar terlihat konsisten dengan AppBar Beranda
+        centerTitle: true,
         title: const Text(
           "Akun saya",
           style: TextStyle(
@@ -23,10 +26,8 @@ class ProfilePage extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
-          onPressed: () {},
-        ),
+        // Kita hapus leading arrow_back karena halaman ini berada di Tab Utama
+        automaticallyImplyLeading: false, 
         actions: [
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.black87),
@@ -68,6 +69,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
+            // Card Pesanan Saya
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -93,9 +95,7 @@ class ProfilePage extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 16),
-
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
@@ -119,6 +119,7 @@ class ProfilePage extends StatelessWidget {
 
             const SizedBox(height: 20),
 
+            // Menu List
             ProfileMenuItem(
               icon: Icons.favorite_border,
               title: "Disukai",
@@ -149,6 +150,7 @@ class ProfilePage extends StatelessWidget {
 
             const SizedBox(height: 30),
 
+            // Tombol Keluar
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -161,41 +163,18 @@ class ProfilePage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: () {
+                  // Tambahkan logika Logout di sini nantinya
+                },
                 icon: const Icon(Icons.logout),
                 label: const Text("Keluar"),
               ),
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 4,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Beranda",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag),
-            label: "Produk",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.article),
-            label: "Artikel",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: "Keranjang",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Akun",
-          ),
-        ],
-      ),
+      // FOOTER DIHAPUS DARI SINI KARENA SUDAH DIKONTROL OLEH HOME_PAGE
     );
   }
 }
