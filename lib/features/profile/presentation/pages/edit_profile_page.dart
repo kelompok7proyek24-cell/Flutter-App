@@ -48,9 +48,9 @@ class EditProfilePage extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            _buildField("Nama Lengkap", "Alex Aquas"),
-            _buildField("Username", "@alexaqua"),
-            _buildField("Email", "alex.aqua@gmail.com"),
+            _buildField("Nama Lengkap", "Azani Sakti SR"),
+            _buildField("Username", "@Azani"),
+            _buildField("Email", "azani@gmail.com"),
             _buildField("Nomor Telepon", "+62 812 3456 7890"),
 
             const SizedBox(height: 16),

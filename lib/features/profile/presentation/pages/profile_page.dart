@@ -54,7 +54,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              "Adifis",
+              "Azani Sakti SR",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -62,7 +62,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             const Text(
-              "azani.idta@gmail.com",
+              "azani@gmail.com",
               style: TextStyle(
                 color: Colors.grey,
               ),
