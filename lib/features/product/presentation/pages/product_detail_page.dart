@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 
 class ProductDetailPage extends StatefulWidget {
-  final Map<String, dynamic> product; // Data dummy dikirim dari ProductPage
+  final Map<String, dynamic> product;
+  // 1. TAMBAHKAN: Parameter callback untuk sinkronisasi ke HomePage
+  final Function(String)? onAddToCart;
 
-  const ProductDetailPage({super.key, required this.product});
+  const ProductDetailPage({
+    super.key, 
+    required this.product, 
+    this.onAddToCart, // Tambahkan di constructor
+  });
 
   @override
   State<ProductDetailPage> createState() => _ProductDetailPageState();
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
-  String selectedVariant = ""; // Untuk menyimpan pilihan Chip (Jantan/Betina/Watt)
+  String selectedVariant = ""; 
   int quantity = 1;
 
   @override
@@ -19,7 +25,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-          // 1. Sliver AppBar untuk Gambar (Desain Galeri)
+          // 1. Sliver AppBar (Visual Tetap Sama)
           SliverAppBar(
             expandedHeight: 400,
             pinned: true,
@@ -32,7 +38,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 color: Colors.grey[100],
-                child: Center(child: Icon(Icons.set_meal, size: 100, color: Colors.blue[200])), // Ganti dengan Image.network
+                child: const Center(child: Icon(Icons.set_meal, size: 100, color: Colors.blueAccent)), 
               ),
             ),
           ),
@@ -83,7 +89,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
                   const SizedBox(height: 25),
 
-                  // 4. Pemilihan Varian (Contoh Jantan/Betina)
+                  // 4. Pemilihan Varian
                   const Text("Pilih Jenis Kelamin", style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   Row(
@@ -115,7 +121,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ],
       ),
       
-      // 6. Bottom Bar (Chat, Keranjang, Beli)
+      // 6. Bottom Bar (Koneksi ke Sistem Keranjang)
       bottomNavigationBar: Container(
         height: 80,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -126,11 +132,27 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         child: Row(
           children: [
             IconButton(onPressed: () {}, icon: const Icon(Icons.chat_outlined, color: Colors.blue)),
-            IconButton(onPressed: () {}, icon: const Icon(Icons.add_shopping_cart, color: Colors.blue)),
+            
+            // 2. PERBAIKAN: Tombol Tambah Keranjang
+            IconButton(
+              onPressed: () {
+                if (widget.onAddToCart != null) {
+                  widget.onAddToCart!(widget.product['name']);
+                }
+              }, 
+              icon: const Icon(Icons.add_shopping_cart, color: Colors.blue)
+            ),
+            
             const SizedBox(width: 10),
+            
+            // 3. PERBAIKAN: Tombol Beli Sekarang
             Expanded(
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  if (widget.onAddToCart != null) {
+                    widget.onAddToCart!(widget.product['name']);
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

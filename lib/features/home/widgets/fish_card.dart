@@ -1,3 +1,5 @@
+// lib/features/home/widgets/fish_card.dart
+
 import 'package:flutter/material.dart';
 import '../../../../core/constants/colors.dart';
 
@@ -5,13 +7,18 @@ class FishCard extends StatelessWidget {
   final String name;
   final String price;
   final String rating;
+  
+  // --- 1. BARU: Tambahkan variabel callback ini ---
+  final VoidCallback? onTapAdd; 
 
-  // Tambahkan 'const' dan 'super.key' agar sinkron dengan HomePage
   const FishCard({
     super.key, 
     required this.name, 
     required this.price, 
     required this.rating,
+    
+    // --- 2. BARU: Masukkan ke constructor ---
+    this.onTapAdd, 
   });
 
   @override
@@ -78,10 +85,15 @@ class FishCard extends StatelessWidget {
                       price, 
                       style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                     ),
-                    const CircleAvatar(
-                      radius: 12,
-                      backgroundColor: AppColors.primaryBlue,
-                      child: Icon(Icons.add, color: Colors.white, size: 16),
+                    
+                    // --- 3. BARU: Bungkus CircleAvatar dengan GestureDetector ---
+                    GestureDetector(
+                      onTap: onTapAdd, // Menghubungkan klik ke fungsi di HomePage
+                      child: const CircleAvatar(
+                        radius: 12,
+                        backgroundColor: AppColors.primaryBlue,
+                        child: Icon(Icons.add, color: Colors.white, size: 16),
+                      ),
                     )
                   ],
                 )

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:ikanku/features/home/widgets/fish_card.dart' show FishCard;
+import 'package:ikanku/features/home/widgets/fish_card.dart'; 
 import '../../../../core/constants/colors.dart';
-import 'package:ikanku/features/profile/presentation/pages/profile_page.dart'; // Import halaman profil
-import 'package:ikanku/features/profile/presentation/pages/settings_page.dart'; // Import halaman settings
-import 'package:ikanku/features/home/widgets/fish_card.dart';
+import 'package:ikanku/features/profile/presentation/pages/profile_page.dart';
+import 'package:ikanku/features/profile/presentation/pages/settings_page.dart';
 import 'package:ikanku/features/product/presentation/pages/product_page.dart';
+import 'package:ikanku/features/cart/presentation/pages/cart_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,39 +14,46 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // 1. Variabel untuk melacak index halaman aktif
   int _currentIndex = 0;
+  int _cartCount = 2; // Angka awal keranjang
 
-  // 2. Daftar halaman yang akan ditampilkan
-  late final List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-    _pages = [
-      _buildHomeContent(), // Index 0: Konten Beranda
-      const ProductPage(), // Index 1
-      const Center(child: Text("Halaman Artikel")), // Index 2
-      const Center(child: Text("Halaman Keranjang")), // Index 3
-      const ProfilePage(), // Index 4: Halaman Akun
-    ];
+  void _incrementCart(String productName) {
+    setState(() {
+      _cartCount++;
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("$productName berhasil ditambah ke keranjang"),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // --- PINDAHKAN LIST PAGES KE SINI AGAR REAKTIF ---
+    final List<Widget> pages = [
+      _buildHomeContent(), 
+      ProductPage(onAddToCart: _incrementCart), 
+      const Center(child: Text("Halaman Artikel")), 
+      const CartPage(), 
+      const ProfilePage(), 
+    ];
+
     return Scaffold(
       backgroundColor: Colors.white,
-      // 3. Body akan berganti sesuai index yang dipilih
-      body: _pages[_currentIndex],
-      
+      body: pages[_currentIndex], // Menggunakan variabel lokal pages
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primaryBlue,
         unselectedItemColor: Colors.grey,
-        currentIndex: _currentIndex, // Index yang sedang aktif
+        currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
-            _currentIndex = index; // Ubah halaman saat tombol ditekan
+            _currentIndex = index;
           });
         },
         items: const [
@@ -60,19 +67,17 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 4. Kita pindahkan konten beranda ke fungsi terpisah agar rapi
   Widget _buildHomeContent() {
     return SafeArea(
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // Header dengan Badge yang reaktif
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  // TOMBOL GERIGI TERKONEKSI KE SETTINGS
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
@@ -88,20 +93,29 @@ class _HomePageState extends State<HomePage> {
                         style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 18)),
                     ),
                   ),
-                  const Stack(
+                  
+                  Stack(
                     children: [
-                      Icon(Icons.shopping_cart_outlined, color: AppColors.primaryBlue),
-                      Positioned(
-                        right: 0,
-                        child: CircleAvatar(radius: 6, backgroundColor: Colors.red, child: Text("2", style: TextStyle(fontSize: 8, color: Colors.white))),
-                      )
+                      const Icon(Icons.shopping_cart_outlined, color: AppColors.primaryBlue),
+                      if (_cartCount > 0)
+                        Positioned(
+                          right: 0,
+                          child: CircleAvatar(
+                            radius: 6, 
+                            backgroundColor: Colors.red, 
+                            child: Text(
+                              "$_cartCount", 
+                              style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold)
+                            )
+                          ),
+                        )
                     ],
                   ),
                 ],
               ),
             ),
 
-            // Search Bar
+            // Search Bar & Banner (Tetap sama)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: TextField(
@@ -115,7 +129,6 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // Banner
             Container(
               margin: const EdgeInsets.all(16.0),
               height: 150,
@@ -129,7 +142,6 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // Section Produk
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
@@ -141,20 +153,29 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // List Produk
+            // List Produk Horizontal di Beranda
             SizedBox(
               height: 220,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.only(left: 16),
-                children: const [
-                  FishCard(name: "Red Ryukin Goldfish", price: "Rp25.000", rating: "4.8"),
-                  FishCard(name: "Red Ryukin Goldfish", price: "Rp25.000", rating: "4.8"),
+                children: [
+                  FishCard(
+                    name: "Red Ryukin Goldfish", 
+                    price: "Rp25.000", 
+                    rating: "4.8",
+                    onTapAdd: () => _incrementCart("Red Ryukin Goldfish"),
+                  ),
+                  FishCard(
+                    name: "Red Ryukin Goldfish", 
+                    price: "Rp25.000", 
+                    rating: "4.8",
+                    onTapAdd: () => _incrementCart("Red Ryukin Goldfish"),
+                  ),
                 ],
               ),
             ),
 
-            // Artikel Section
             const Padding(
               padding: EdgeInsets.all(16.0),
               child: Text("Perawatan ikan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

@@ -1,183 +1,108 @@
 import 'package:flutter/material.dart';
-import 'package:ikanku/features/home/widgets/fish_card.dart'; // Pastikan path widget FishCard benar
-import '../../../../core/constants/colors.dart';
-
-// 1. Model Data Produk (Bisa dipindah ke folder data/models nanti)
-class Product {
-  final String id;
-  final String name;
-  final String category;
-  final int price;
-  final double rating;
-  final String imageUrl;
-
-  Product({
-    required this.id,
-    required this.name,
-    required this.category,
-    required this.price,
-    required this.rating,
-    required this.imageUrl,
-  });
-}
+import '../../../../features/home/widgets/fish_card.dart';
+import 'product_detail_page.dart';
 
 class ProductPage extends StatefulWidget {
-  const ProductPage({super.key});
+  // --- 1. TAMBAHKAN PARAMETER INI ---
+  final Function(String)? onAddToCart;
+  
+  const ProductPage({super.key, this.onAddToCart});
 
   @override
   State<ProductPage> createState() => _ProductPageState();
 }
 
 class _ProductPageState extends State<ProductPage> {
-  // 2. Data Dummy (Nantinya diganti dengan data dari API Express.js)
-  final List<Product> _allProducts = [
-    Product(id: "1", name: "Red Ryukin Goldfish", category: "Koki", price: 25000, rating: 4.8, imageUrl: ""),
-    Product(id: "2", name: "Molly Balon Calico", category: "Molly", price: 15000, rating: 4.5, imageUrl: ""),
-    Product(id: "3", name: "Guppy Albino White", category: "Guppy", price: 20000, rating: 4.9, imageUrl: ""),
-    Product(id: "4", name: "Aquarium Set Nano", category: "Aquarium", price: 350000, rating: 4.7, imageUrl: ""),
-    Product(id: "5", name: "Calico Teleskop Eye", category: "Koki", price: 35000, rating: 4.6, imageUrl: ""),
-    Product(id: "6", name: "Molly Black Platinum", category: "Molly", price: 24000, rating: 4.8, imageUrl: ""),
+  final List<Map<String, dynamic>> _products = [
+    {"name": "Red Ryukin Goldfish", "price": "Rp25.000", "cat": "Koki", "rate": "4.8"},
+    {"name": "Molly ballon calico", "price": "Rp25.000", "cat": "Molly", "rate": "4.9"},
+    {"name": "Guppy HB White", "price": "Rp20.000", "cat": "Guppy", "rate": "4.5"},
+    {"name": "Canister Filter CF-1200", "price": "Rp32.000", "cat": "Aquarium set", "rate": "4.7"},
   ];
 
-  // State untuk filtering
-  List<Product> _filteredProducts = [];
-  String _selectedCategory = "Semua";
-  final TextEditingController _searchController = TextEditingController();
-
-  final List<String> _categories = ["Semua", "Koki", "Guppy", "Molly", "Aquarium"];
-
-  @override
-  void initState() {
-    super.initState();
-    _filteredProducts = _allProducts; // Inisialisasi awal tampilkan semua
-  }
-
-  // 3. Logika Filtering & Search
-  void _runFilter() {
-    setState(() {
-      _filteredProducts = _allProducts.where((product) {
-        final matchesSearch = product.name.toLowerCase().contains(_searchController.text.toLowerCase());
-        final matchesCategory = _selectedCategory == "Semua" || product.category == _selectedCategory;
-        return matchesSearch && matchesCategory;
-      }).toList();
-    });
-  }
+  String _selectedCat = "Semua";
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
+        backgroundColor: Colors.white,
+        title: const Text("Semua Produk", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
-        title: const Text(
-          "Semua Produk",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.shopping_cart_outlined, color: Colors.blue),
-          )
-        ],
       ),
       body: Column(
         children: [
-          // 4. Search Bar
+          // Search Bar
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
-              controller: _searchController,
-              onChanged: (value) => _runFilter(), // Panggil filter saat mengetik
               decoration: InputDecoration(
-                hintText: "Cari ikan terbaikmu..",
+                hintText: "Cari jenis ikan..",
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: Container(
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(8)),
-                  child: const Icon(Icons.tune, color: Colors.white, size: 20),
-                ),
                 filled: true,
                 fillColor: Colors.grey[100],
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
             ),
           ),
-
-          // 5. Category Chips (Horizontal Scroll)
-          SizedBox(
-            height: 40,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                final isSelected = _selectedCategory == category;
+          
+          // Category Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: ["Semua", "Koki", "Guppy", "Molly", "Aquarium set"].map((cat) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
-                    label: Text(category),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedCategory = category;
-                        _runFilter();
-                      });
-                    },
+                    label: Text(cat),
+                    selected: _selectedCat == cat,
+                    onSelected: (selected) => setState(() => _selectedCat = cat),
                     selectedColor: Colors.blue,
-                    labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
-                    backgroundColor: Colors.grey[100],
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    labelStyle: TextStyle(color: _selectedCat == cat ? Colors.white : Colors.black),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          // Grid Produk
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.7,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: _products.length,
+              itemBuilder: (context, index) {
+                final p = _products[index];
+                return GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(
+                    builder: (context) => ProductDetailPage(
+                      product: p,
+                      // --- 2. KIRIM JUGA FUNGSI INI KE DETAIL PAGE ---
+                      onAddToCart: widget.onAddToCart, 
+                    ),
+                  )),
+                  child: FishCard(
+                    name: p['name'], 
+                    price: p['price'], 
+                    rating: p['rate'],
+                    // --- 3. HUBUNGKAN TOMBOL + DISINI ---
+                    onTapAdd: () {
+                      if (widget.onAddToCart != null) {
+                        widget.onAddToCart!(p['name']);
+                      }
+                    },
                   ),
                 );
               },
             ),
-          ),
-
-          // 6. Header Grid (Showing results)
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Showing ${_filteredProducts.length} results",
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-                const Row(
-                  children: [
-                    Text("Sort: Featured", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    Icon(Icons.keyboard_arrow_down, size: 16),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // 7. Grid Produk
-          Expanded(
-            child: _filteredProducts.isEmpty
-                ? const Center(child: Text("Produk tidak ditemukan"))
-                : GridView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, // 2 kolom sesuai gambar
-                      childAspectRatio: 0.72, // Mengatur tinggi kartu
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: _filteredProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = _filteredProducts[index];
-                      return FishCard(
-                        name: product.name,
-                        price: "Rp${product.price}",
-                        rating: product.rating.toString(),
-                      );
-                    },
-                  ),
           ),
         ],
       ),
