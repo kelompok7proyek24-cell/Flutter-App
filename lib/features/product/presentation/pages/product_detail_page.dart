@@ -78,7 +78,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                   Icon(Icons.check_circle, size: 14, color: Colors.blue),
                                 ],
                               ),
-                              Text("Tangerang Selatan", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              Text("Indramayu Kota", style: TextStyle(fontSize: 12, color: Colors.grey)),
                             ],
                           ),
                         ),
@@ -93,7 +93,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   const Text("Pilih Jenis Kelamin", style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   Row(
-                    children: ["Jantan", "Betina"].map((variant) {
+                    children: ["Jantan", "Betina", "Sepasang"].map((variant) {
                       return Padding(
                         padding: const EdgeInsets.only(right: 10),
                         child: ChoiceChip(

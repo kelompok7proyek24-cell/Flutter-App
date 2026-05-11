@@ -53,7 +53,7 @@ class _ProductPageState extends State<ProductPage> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.all(16),
             child: Row(
-              children: ["Semua", "Koki", "Guppy", "Molly", "Aquarium set"].map((cat) {
+              children: ["Semua", "Koki", "Guppy", "Molly", "Peralatan"].map((cat) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(

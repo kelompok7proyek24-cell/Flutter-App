@@ -1,23 +1,29 @@
-// profile_page.dart
-
 import 'package:flutter/material.dart';
 import 'settings_page.dart';
-// import 'edit_profile_page.dart'; // Aktifkan jika diperlukan
 import '../widgets/profile_menu_item.dart';
 import '../widgets/order_status_card.dart';
+import 'my_orders_page.dart'; // PASTIKAN SUDAH DI-IMPORT
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
+  // --- FUNGSI NAVIGASI BARU ---
+  void _goToOrders(BuildContext context, int index) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MyOrdersPage(initialTab: index),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // KITA TETAP MENGGUNAKAN SCAFFOLD, TAPI HAPUS bottomNavigationBar-nya
     return Scaffold(
       backgroundColor: const Color(0xffF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        // Center title agar terlihat konsisten dengan AppBar Beranda
         centerTitle: true,
         title: const Text(
           "Akun saya",
@@ -26,7 +32,6 @@ class ProfilePage extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        // Kita hapus leading arrow_back karena halaman ini berada di Tab Utama
         automaticallyImplyLeading: false, 
         actions: [
           IconButton(
@@ -34,9 +39,7 @@ class ProfilePage extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const SettingsPage(),
-                ),
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
               );
             },
           ),
@@ -48,28 +51,21 @@ class ProfilePage extends StatelessWidget {
           children: [
             const CircleAvatar(
               radius: 45,
-              backgroundImage: NetworkImage(
-                'https://i.pravatar.cc/300',
-              ),
+              backgroundImage: NetworkImage('https://i.pravatar.cc/300'),
             ),
             const SizedBox(height: 12),
             const Text(
-              "Azani Sakti SR",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              "Azani Sakti SR", // Sesuai identitas user
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             const Text(
               "azani@gmail.com",
-              style: TextStyle(
-                color: Colors.grey,
-              ),
+              style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 20),
 
-            // Card Pesanan Saya
+            // --- KARTU PESANAN DENGAN LOGIKA NAVIGASI ---
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -83,33 +79,33 @@ class ProfilePage extends StatelessWidget {
                     children: [
                       const Text(
                         "Pesanan Saya",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       const Spacer(),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () => _goToOrders(context, 0), // Buka Tab 0 (Semua)
                         child: const Text("Lihat Semua"),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       OrderStatusCard(
                         icon: Icons.wallet_giftcard,
                         title: "Dikemas",
+                        onTap: () => _goToOrders(context, 1), // Buka Tab 1
                       ),
                       OrderStatusCard(
                         icon: Icons.local_shipping,
                         title: "Dikirim",
+                        onTap: () => _goToOrders(context, 2), // Buka Tab 2
                       ),
                       OrderStatusCard(
                         icon: Icons.check_circle,
                         title: "Selesai",
+                        onTap: () => _goToOrders(context, 3), // Buka Tab 3
                       ),
                     ],
                   ),
@@ -119,35 +115,31 @@ class ProfilePage extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Menu List
+            // Menu List Tetap Sama
             ProfileMenuItem(
               icon: Icons.favorite_border,
               title: "Disukai",
               subtitle: "12 Items Saved",
               onTap: () {},
             ),
-
             ProfileMenuItem(
               icon: Icons.location_on_outlined,
               title: "Alamat Pengiriman",
               subtitle: "Home, Office",
               onTap: () {},
             ),
-
             ProfileMenuItem(
               icon: Icons.credit_card,
               title: "Metode Pembayaran",
               subtitle: "Visa ****4242",
               onTap: () {},
             ),
-
             ProfileMenuItem(
               icon: Icons.chat_bubble_outline,
               title: "Pesan",
               subtitle: "Tidak Ada Pesan",
               onTap: () {},
             ),
-
             const SizedBox(height: 30),
 
             // Tombol Keluar
@@ -159,13 +151,9 @@ class ProfilePage extends StatelessWidget {
                   foregroundColor: Colors.red,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                onPressed: () {
-                  // Tambahkan logika Logout di sini nantinya
-                },
+                onPressed: () {},
                 icon: const Icon(Icons.logout),
                 label: const Text("Keluar"),
               ),
@@ -174,7 +162,6 @@ class ProfilePage extends StatelessWidget {
           ],
         ),
       ),
-      // FOOTER DIHAPUS DARI SINI KARENA SUDAH DIKONTROL OLEH HOME_PAGE
     );
   }
 }
