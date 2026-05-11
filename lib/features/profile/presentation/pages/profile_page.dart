@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'settings_page.dart';
 import '../widgets/profile_menu_item.dart';
 import '../widgets/order_status_card.dart';
-import 'my_orders_page.dart'; // PASTIKAN SUDAH DI-IMPORT
+import 'my_orders_page.dart'; 
+// Import halaman pesan dan chat
+import 'package:ikanku/features/chat/presentation/pages/message_list_page.dart';
+import 'package:ikanku/features/chat/presentation/pages/chat_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
-  // --- FUNGSI NAVIGASI BARU ---
+  // --- FUNGSI NAVIGASI PESANAN ---
   void _goToOrders(BuildContext context, int index) {
     Navigator.push(
       context,
@@ -55,7 +58,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              "Azani Sakti SR", // Sesuai identitas user
+              "Azani Sakti SR", 
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
@@ -65,7 +68,7 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // --- KARTU PESANAN DENGAN LOGIKA NAVIGASI ---
+            // --- KARTU PESANAN ---
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -83,7 +86,7 @@ class ProfilePage extends StatelessWidget {
                       ),
                       const Spacer(),
                       TextButton(
-                        onPressed: () => _goToOrders(context, 0), // Buka Tab 0 (Semua)
+                        onPressed: () => _goToOrders(context, 0), 
                         child: const Text("Lihat Semua"),
                       ),
                     ],
@@ -95,17 +98,17 @@ class ProfilePage extends StatelessWidget {
                       OrderStatusCard(
                         icon: Icons.wallet_giftcard,
                         title: "Dikemas",
-                        onTap: () => _goToOrders(context, 1), // Buka Tab 1
+                        onTap: () => _goToOrders(context, 1), 
                       ),
                       OrderStatusCard(
                         icon: Icons.local_shipping,
                         title: "Dikirim",
-                        onTap: () => _goToOrders(context, 2), // Buka Tab 2
+                        onTap: () => _goToOrders(context, 2), 
                       ),
                       OrderStatusCard(
                         icon: Icons.check_circle,
                         title: "Selesai",
-                        onTap: () => _goToOrders(context, 3), // Buka Tab 3
+                        onTap: () => _goToOrders(context, 3), 
                       ),
                     ],
                   ),
@@ -115,7 +118,7 @@ class ProfilePage extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Menu List Tetap Sama
+            // --- MENU LIST ---
             ProfileMenuItem(
               icon: Icons.favorite_border,
               title: "Disukai",
@@ -134,15 +137,23 @@ class ProfilePage extends StatelessWidget {
               subtitle: "Visa ****4242",
               onTap: () {},
             ),
+            
+            // MENU PESAN TERHUBUNG KE MESSAGE LIST
             ProfileMenuItem(
               icon: Icons.chat_bubble_outline,
               title: "Pesan",
-              subtitle: "Tidak Ada Pesan",
-              onTap: () {},
+              subtitle: "Cek pesan terbaru",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MessageListPage()),
+                );
+              },
             ),
+            
             const SizedBox(height: 30),
 
-            // Tombol Keluar
+            // --- TOMBOL KELUAR ---
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -153,7 +164,9 @@ class ProfilePage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                onPressed: () {},
+                onPressed: () {
+                  // Logika logout bisa ditambahkan di sini
+                },
                 icon: const Icon(Icons.logout),
                 label: const Text("Keluar"),
               ),
