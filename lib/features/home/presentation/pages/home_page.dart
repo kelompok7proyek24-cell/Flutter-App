@@ -5,6 +5,7 @@ import 'package:ikanku/features/profile/presentation/pages/profile_page.dart';
 import 'package:ikanku/features/profile/presentation/pages/settings_page.dart';
 import 'package:ikanku/features/product/presentation/pages/product_page.dart';
 import 'package:ikanku/features/cart/presentation/pages/cart_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,12 +16,28 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
-  int _cartCount = 2; // Angka awal keranjang
+  int _cartCount = 0;
 
-  void _incrementCart(String productName) {
+  @override
+  void initState() {
+    super.initState();
+    _loadCartCount();
+  }
+
+  // Mengambil data agar badge keranjang tetap sinkron
+  void _loadCartCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _cartCount = prefs.getInt('cart_count') ?? 0;
+    });
+  }
+
+  void _incrementCart(String productName) async {
+    final prefs = await SharedPreferences.getInstance();
     setState(() {
       _cartCount++;
     });
+    await prefs.setInt('cart_count', _cartCount);
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -32,9 +49,29 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // PERBAIKAN LOGIKA: Pindah tab sekaligus kirim kategori
+  void _navigateToCategory(String categoryName) {
+    // 1. Update index tab agar saat kembali, user berada di tab produk
+    setState(() {
+      _currentIndex = 1; 
+    });
+    
+    // 2. Navigasi ke halaman produk dengan filter awal
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductPage(
+          onAddToCart: _incrementCart,
+          // Pastikan variabel ini diterima di ProductPage
+          initialCategory: categoryName, 
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // --- PINDAHKAN LIST PAGES KE SINI AGAR REAKTIF ---
+    // List halaman utama
     final List<Widget> pages = [
       _buildHomeContent(), 
       ProductPage(onAddToCart: _incrementCart), 
@@ -45,17 +82,13 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: pages[_currentIndex], // Menggunakan variabel lokal pages
+      body: pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primaryBlue,
         unselectedItemColor: Colors.grey,
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
           BottomNavigationBarItem(icon: Icon(Icons.shopping_bag), label: 'Produk'),
@@ -73,27 +106,20 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header dengan Badge yang reaktif
+            // Header
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SettingsPage()),
-                      );
-                    },
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsPage())),
                     child: const Icon(Icons.settings_outlined, color: AppColors.primaryBlue),
                   ),
                   const Expanded(
                     child: Center(
-                      child: Text("IKANKU.ID", 
-                        style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 18)),
+                      child: Text("IKANKU.ID", style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 18)),
                     ),
                   ),
-                  
                   Stack(
                     children: [
                       const Icon(Icons.shopping_cart_outlined, color: AppColors.primaryBlue),
@@ -103,10 +129,7 @@ class _HomePageState extends State<HomePage> {
                           child: CircleAvatar(
                             radius: 6, 
                             backgroundColor: Colors.red, 
-                            child: Text(
-                              "$_cartCount", 
-                              style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold)
-                            )
+                            child: Text("$_cartCount", style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold))
                           ),
                         )
                     ],
@@ -115,10 +138,12 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // Search Bar & Banner (Tetap sama)
+            // Search Bar (Redirect ke Produk)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: TextField(
+                readOnly: true, 
+                onTap: () => setState(() => _currentIndex = 1),
                 decoration: InputDecoration(
                   hintText: "Cari ikan terbaikmu..",
                   prefixIcon: const Icon(Icons.search),
@@ -129,59 +154,69 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
+            // Banner Promo
             Container(
               margin: const EdgeInsets.all(16.0),
               height: 150,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: AppColors.primaryBlue,
+                gradient: const LinearGradient(colors: [AppColors.primaryBlue, Colors.lightBlue]),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: const Center(
-                child: Text("IKANKU.ID", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                child: Text("PROMO EKSPO", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
               ),
             ),
 
+            // Bagian Kategori Pilihan
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Produk unggulan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text("Lebih banyak", style: TextStyle(color: AppColors.primaryBlue, fontSize: 12)),
-                ],
-              ),
+              child: Text("Kategori Pilihan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-
-            // List Produk Horizontal di Beranda
+            const SizedBox(height: 12),
+            
             SizedBox(
-              height: 220,
+              height: 100,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.only(left: 16),
                 children: [
-                  FishCard(
-                    name: "Red Ryukin Goldfish", 
-                    price: "Rp25.000", 
-                    rating: "4.8",
-                    onTapAdd: () => _incrementCart("Red Ryukin Goldfish"),
-                  ),
-                  FishCard(
-                    name: "Red Ryukin Goldfish", 
-                    price: "Rp25.000", 
-                    rating: "4.8",
-                    onTapAdd: () => _incrementCart("Red Ryukin Goldfish"),
-                  ),
+                  _buildCategoryBox("Molly", Icons.set_meal, Colors.orange[100]!),
+                  _buildCategoryBox("Koki", Icons.bakery_dining, Colors.red[100]!),
+                  _buildCategoryBox("Guppy", Icons.waves, Colors.blue[100]!),
+                  _buildCategoryBox("Peralatan", Icons.handyman, Colors.green[100]!),
+                  _buildCategoryBox("Pakan Ikan", Icons.grain, Colors.purple[100]!),
                 ],
               ),
             ),
 
             const Padding(
               padding: EdgeInsets.all(16.0),
-              child: Text("Perawatan ikan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text("Tips Perawatan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-            
             _buildArticleCard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryBox(String title, IconData icon, Color color) {
+    return GestureDetector(
+      onTap: () => _navigateToCategory(title),
+      child: Container(
+        width: 85,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.black54, size: 30),
+            const SizedBox(height: 8),
+            Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -190,9 +225,10 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildArticleCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20), 
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
+        color: Colors.white,
         border: Border.all(color: Colors.grey.shade200),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -200,15 +236,20 @@ class _HomePageState extends State<HomePage> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Container(width: 60, height: 60, color: Colors.green[200], child: const Icon(Icons.eco)),
+            child: Container(
+              width: 60, 
+              height: 60, 
+              color: Colors.green[50], 
+              child: const Icon(Icons.eco, color: Colors.green)
+            ),
           ),
           const SizedBox(width: 12),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("5 Tips for a Perfect Tank Ecosystem", style: TextStyle(fontWeight: FontWeight.bold)),
-                Text("Learn how to balance pH and nitrate levels easily.", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text("Menjaga Ekosistem Akuarium", style: TextStyle(fontWeight: FontWeight.bold)),
+                Text("Cara mudah mengatur pH air untuk ikan hias.", style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
           ),
