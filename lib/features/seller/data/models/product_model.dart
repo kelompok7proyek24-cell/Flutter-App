@@ -150,7 +150,7 @@ List<ProductModel> dummyProducts = [
     status: "danger",
   ),
   ProductModel(
-    id: "PROD-KOK-002",
+    id: "PROD-KOK-003",
     name: "Ikan Koki Mutiara",
     category: "Koki",
     price: 65000,
@@ -225,4 +225,85 @@ List<ProductModel> dummyProducts = [
     reviewCount: 102,
     status: "warning",
   ),
+
+  // -----------------------------------------------------------------------
+  // KATEGORI: PERALATAN
+  // -----------------------------------------------------------------------
+  ProductModel(
+    id: "PROD-PER-001",
+    name: "Canister Filter CF-1200",
+    category: "Peralatan",
+    price: 320000,
+    stock: 15,
+    imagePath: "assets/images/categories/peralatan/canister_filter.png", 
+    description: "Sistem filtrasi eksternal akuarium dengan 3 tahapan penyaringan media. Menjaga air tetap jernih kristal, senyap, dan hemat energi. Cocok untuk tank 60-100cm.",
+    rating: 4.7, // Diubah menjadi double dan disesuaikan namanya
+    reviewCount: 22,
+    status: "normal",
+  ),
+
+  // -----------------------------------------------------------------------
+  // KATEGORI: PAKAN IKAN
+  // -----------------------------------------------------------------------
+    ProductModel(
+    id: "PROD-PAK-001",
+    name: "Fishgrow Micro Pellet Growth & Color",
+    category: "Pakan Ikan",
+    price: 18000, 
+    stock: 200,
+    imagePath: "assets/images/categories/pakan/pakan_ikan_guppy.jpg",
+    description: "Pelet mikro berukuran khusus untuk mulut kecil ikan Guppy dan ikan hias kecil lainnya. Menggunakan Growth & Color Formula yang kaya akan vitamin dan protein tinggi untuk mengoptimalkan bukaan ekor (sirip) serta mencerahkan gen warna. Mudah dicerna berkat fitur Digestive Care.",
+    rating: 4.8,
+    reviewCount: 114,
+    status: "normal",
+  ),  
+    ProductModel(
+    id: "PROD-PAK-002",
+    name: "New Oranda Growth & Color Enhancer",
+    category: "Pakan Ikan",
+    price: 35000, // Perkiraan harga pasar
+    stock: 40,
+    imagePath: "assets/images/categories/pakan/pakan_ikan_koki2.jpg",
+    description: "Pelet premium khusus ikan mas koki (terutama jenis Oranda) dengan formula triple action: Fast Growth, Color Enhancer, dan Tinggi Protein (33%). Membantu mempercepat pertumbuhan Jambul (wen) secara maksimal dan mempertajam warna alami ikan tanpa memperkeruh air akuarium.",
+    rating: 4.8,
+    reviewCount: 45,
+    status: "normal",
+  ),
+    ProductModel(
+    id: "PROD-PAK-003",
+    name: "Pakan Arwana Floating High Protein",
+    category: "Pakan Ikan",
+    price: 65000, 
+    stock: 12,
+    imagePath: "assets/images/categories/pakan/pakan_ikan_arwana.jpg",
+    description: "Pakan premium tipe mengapung (floating) khusus Arwana dengan kandungan Super High Protein 60%. Diformulasikan khusus sebagai pengganti pakan hidup untuk merangsang nafsu makan, meningkatkan imunitas, serta mempercepat mutasi warna merah/golden pada sisik Arwana kesayangan Anda.",
+    rating: 4.9,
+    reviewCount: 19,
+    status: "warning", // Mengingat stok tinggal 12
+  ),  
+    ProductModel(
+    id: "PROD-PAK-004",
+    name: "KRF Pelet Spesial Ikan Molly Ballon",
+    category: "Pakan Ikan",
+    price: 15000, 
+    stock: 120,
+    imagePath: "assets/images/categories/pakan/pakan_ikan_molly2.jpg",
+    description: "Pelet harian bernutrisi lengkap yang dirancang khusus untuk anatomi pencernaan Ikan Molly Balon. Dilengkapi dengan formula Boost Color & Growth dari bahan alami 100% berkualitas tinggi. Ukuran pelet sangat halus, membuat ikan sehat, aktif, cerah, dan tahan terhadap penyakit.",
+    rating: 4.7,
+    reviewCount: 68,
+    status: "normal",
+  ),
+    ProductModel(
+    id: "PROD-PAK-005",
+    name: "Bionautic Flakes dengan Spirulina & Garlic",
+    category: "Pakan Ikan",
+    price: 110000, // Jenis pakan impor/besar
+    stock: 8,
+    imagePath: "assets/images/categories/pakan/pakan_ikan_molly.jpg",
+    description: "Pakan premium berbentuk serpihan (flakes) multi-komponen untuk ikan hias omnivora. Mengandung Spirulina, Bawang Putih (Garlic), dan Astaxanthin untuk meningkatkan sistem pencernaan, mencegah parasit internal, serta mempertegas kecerahan warna ikan secara signifikan. Menggunakan formula anti-cloud water.",
+    rating: 4.9,
+    reviewCount: 31,
+    status: "warning",
+  ),
+
 ];
