@@ -35,25 +35,25 @@ class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
   int _cartCount = 0;
 
-  // List 3 Artikel Tips Perawatan menggunakan gambar asset yang tersedia
+  // PERBAIKAN: Jalur gambar dikosongkan agar beralih ke icon eco bawaan (bukan banner lagi)
   final List<ArticleModel> _dummyArticles = [
     ArticleModel(
       id: "a1",
       title: "Menjaga Ekosistem Akuarium",
       subtitle: "Cara mudah mengatur pH air untuk ikan hias.",
-      imagePath: "assets/images/banner_home.png", // Menggunakan asset terdaftar
+      imagePath: "", 
     ),
     ArticleModel(
       id: "a2",
       title: "Nutrisi Tepat Ikan Arwana",
       subtitle: "Jenis pakan alami untuk mempercepat mutasi warna merah.",
-      imagePath: "assets/images/banner_home.png", // Menggunakan asset terdaftar
+      imagePath: "", 
     ),
     ArticleModel(
       id: "a3",
       title: "Budidaya Cepat Ikan Guppy",
       subtitle: "Panduan dasar mengawinkan indukan guppy strain murni.",
-      imagePath: "assets/images/banner_home.png", // Menggunakan asset terdaftar
+      imagePath: "", 
     ),
   ];
 
@@ -172,17 +172,42 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // Banner Promo (Tetap Dipertahankan)
+// =========================================
+            // PERBAIKAN KOTAK BANNER: AMAN DARI ERROR GRADIENT
+            // =========================================
             Container(
               margin: const EdgeInsets.all(16.0),
               height: 150,
               width: double.infinity,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [AppColors.primaryBlue, Colors.lightBlue]),
                 borderRadius: BorderRadius.circular(15),
               ),
-              child: const Center(
-                child: Text("PROMO EKSPO", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Image.asset(
+                  "assets/images/banner_home.png", // Memanggil file gambar banner utama
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Proteksi sistem: Gradient dipindahkan ke dalam BoxDecoration agar sintaksis valid
+                    return Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.primaryBlue, Colors.lightBlue],
+                        ),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          "PROMO EKSPO", 
+                          style: TextStyle(
+                            color: Colors.white, 
+                            fontSize: 24, 
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
 
@@ -197,7 +222,6 @@ class _HomePageState extends State<HomePage> {
                   const Text("Produk Unggulan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   TextButton(
                     onPressed: () {
-                      // Alihkan indeks menu navigasi bawah langsung ke tab Produk (indeks 1)
                       setState(() => _currentIndex = 1);
                     },
                     child: const Text("View All", style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold)),
@@ -212,7 +236,7 @@ class _HomePageState extends State<HomePage> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: dummyProducts.length > 4 ? 4 : dummyProducts.length, // Maksimal 4 item di beranda
+              itemCount: dummyProducts.length > 4 ? 4 : dummyProducts.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 childAspectRatio: 0.73,
@@ -234,12 +258,14 @@ class _HomePageState extends State<HomePage> {
                         child: ClipRRect(
                           borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
                           child: Image.asset(
-                            product.imagePath, // Mengambil gambar dinamis dari model data
+                            product.imagePath,
                             width: double.infinity,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              // Fallback jika asset gambar tidak ditemukan di komputer lokal
-                              return Container(color: Colors.grey[200], child: const Icon(Icons.broken_image, color: Colors.grey));
+                              return Container(
+                                color: Colors.grey[200], 
+                                child: const Icon(Icons.broken_image, color: Colors.grey)
+                              );
                             },
                           ),
                         ),
@@ -257,7 +283,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              product.description, // Sinkronisasi teks deskripsi unggulan
+                              product.description,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontSize: 11, color: Colors.grey),
@@ -288,7 +314,7 @@ class _HomePageState extends State<HomePage> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _dummyArticles.length, // Menampilkan 3 item artikel sesuai inisialisasi list
+              itemCount: _dummyArticles.length,
               itemBuilder: (context, index) {
                 final article = _dummyArticles[index];
                 return Container(
@@ -304,7 +330,7 @@ class _HomePageState extends State<HomePage> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.asset(
-                          article.imagePath, // Render gambar dinamis pada artikel
+                          article.imagePath,
                           width: 60,
                           height: 60,
                           fit: BoxFit.cover,
@@ -312,6 +338,7 @@ class _HomePageState extends State<HomePage> {
                             width: 60,
                             height: 60,
                             color: Colors.green[50],
+                            // Mengembalikan visual ke ikon daun default yang bersih
                             child: const Icon(Icons.eco, color: Colors.green),
                           ),
                         ),
@@ -327,11 +354,10 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
-                      // Tombol Edit: Disiapkan untuk dihubungkan ke form editing artikel nantinya
                       IconButton(
                         icon: const Icon(Icons.edit_note, color: Colors.grey, size: 22),
                         onPressed: () {
-                          // TODO: Hubungkan dengan fungsi CRUD teks editor artikel
+                          // Tempat integrasi navigasi form update data artikel
                         },
                       ),
                     ],

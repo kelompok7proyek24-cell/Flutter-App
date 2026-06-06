@@ -1,132 +1,237 @@
 import 'package:flutter/material.dart';
-import '../../../../features/home/widgets/fish_card.dart';
+import '../../../../core/constants/colors.dart';
 import 'product_detail_page.dart';
 
+// IMPORT DATA TERPUSAT: Menghubungkan Source of Truth dari modul seller
+import '../../../seller/data/models/product_model.dart';
+
 class ProductPage extends StatefulWidget {
-  // --- 1. TAMBAHKAN PARAMETER INI ---
   final Function(String)? onAddToCart;
-  final String initialCategory; // <--- Tambahkan ini
+  final String initialCategory;
 
   const ProductPage({
     super.key, 
     this.onAddToCart, 
-    this.initialCategory = "Semua" // Defaultnya tetap "Semua"
+    this.initialCategory = "Semua"
   });
-
 
   @override
   State<ProductPage> createState() => _ProductPageState();
 }
 
 class _ProductPageState extends State<ProductPage> {
-  // 1. Data sumber (Source of Truth)
-  final List<Map<String, dynamic>> _products = [
-    {"name": "Red Ryukin Goldfish", "price": "Rp25.000", "cat": "Koki", "rate": "4.8"},
-    {"name": "Molly ballon calico", "price": "Rp25.000", "cat": "Molly", "rate": "4.9"},
-    {"name": "Guppy HB White", "price": "Rp20.000", "cat": "Guppy", "rate": "4.5"},
-    {"name": "Canister Filter CF-1200", "price": "Rp32.000", "cat": "Peralatan", "rate": "4.7"},
-    {"name": "Pelet Akari Premium", "price": "Rp45.000", "cat": "Pakan Ikan", "rate": "4.9"},
-  ];
+  late String _selectedCat;
 
-  String _selectedCat = "Semua";
+  @override
+  void initState() {
+    super.initState();
+    // Menginisialisasi kategori default berdasarkan kiriman halaman Beranda
+    _selectedCat = widget.initialCategory;
+  }
 
   @override
   Widget build(BuildContext context) {
-    // 2. LOGIKA FILTER: Buat list baru berdasarkan kategori yang dipilih
-    // Jika "Semua", ambil semua. Jika tidak, filter berdasarkan key 'cat'.
-    final List<Map<String, dynamic>> filteredProducts = _selectedCat == "Semua"
-        ? _products
-        : _products.where((p) => p['cat'] == _selectedCat).toList();
+    // LOGIKA FILTER: Menyaring data dummyProducts berbasis ProductModel secara dinamis
+    final List<ProductModel> filteredProducts = _selectedCat == "Semua"
+        ? dummyProducts
+        : dummyProducts.where((p) => p.category == _selectedCat).toList();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: const Text("Semua Produk", 
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Semua Produk", 
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+        ),
         centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Column(
         children: [
-          // Search Bar (Tetap sama)
+          // 1. Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
               decoration: InputDecoration(
-                hintText: "Cari jenis ikan..",
+                hintText: "Cari produk di IKANKU.ID..",
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.grey[100],
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12), 
-                  borderSide: BorderSide.none),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),
           
-          // Category Chips
+          // 2. Category Chips (Horizontal Scroll)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
-              // 3. Tambahkan "Pakan Ikan" di daftar chip
-              children: ["Semua","Arwana", "Koki", "Guppy", "Molly", "Peralatan", "Pakan Ikan"].map((cat) {
+              children: ["Semua", "Arwana", "Koki", "Guppy", "Molly", "Peralatan", "Pakan Ikan"].map((cat) {
+                final isSelected = _selectedCat == cat;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
                     label: Text(cat),
-                    selected: _selectedCat == cat,
+                    selected: isSelected,
                     onSelected: (selected) {
                       setState(() {
                         _selectedCat = cat;
                       });
                     },
-                    selectedColor: Colors.blue,
+                    selectedColor: AppColors.primaryBlue,
+                    backgroundColor: Colors.grey[100],
                     labelStyle: TextStyle(
-                      color: _selectedCat == cat ? Colors.white : Colors.black),
+                      color: isSelected ? Colors.white : Colors.black87,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
                   ),
                 );
               }).toList(),
             ),
           ),
 
-          // Grid Produk
+          // 3. Grid View Layar Produk Terintegrasi
           Expanded(
             child: filteredProducts.isEmpty 
-              ? const Center(child: Text("Produk tidak ditemukan")) 
-              : GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.7,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  // 4. GUNAKAN HASIL FILTER DISINI
-                  itemCount: filteredProducts.length,
-                  itemBuilder: (context, index) {
-                    final p = filteredProducts[index];
-                    return GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => ProductDetailPage(
-                          product: p,
-                          onAddToCart: widget.onAddToCart, 
-                        ),
-                      )),
-                      child: FishCard(
-                        name: p['name'], 
-                        price: p['price'], 
-                        rating: p['rate'],
-                        onTapAdd: () {
-                          if (widget.onAddToCart != null) {
-                            widget.onAddToCart!(p['name']);
-                          }
+                ? const Center(
+                    child: Text(
+                      "Produk tidak ditemukan", 
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ) 
+                : GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.72,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: filteredProducts.length,
+                    itemBuilder: (context, index) {
+                      final product = filteredProducts[index];
+                      
+                      // Cek otomatis apakah kategori produk termasuk ikan hias atau perlengkapan non-ikan
+                      final isFish = ["Arwana", "Koki", "Guppy", "Molly"].contains(product.category);
+
+                      return GestureDetector(
+                        onTap: () {
+                          // Navigasi ke detail produk dengan melempar data berbasis ProductModel objek
+                          Navigator.push(
+                            context, 
+                            MaterialPageRoute(
+                              builder: (context) => ProductDetailPage(
+                                product: product,
+                                onAddToCart: widget.onAddToCart, 
+                              ),
+                            ),
+                          );
                         },
-                      ),
-                    );
-                  },
-                ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Render Gambar Asset Dinamis
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(12), 
+                                    topRight: Radius.circular(12),
+                                  ),
+                                  child: Image.asset(
+                                    product.imagePath,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[100], 
+                                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              // Detail Teks Informasi Produk
+                              Padding(
+                                padding: const EdgeInsets.all(10.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    // Deskripsi dinamis adaptif sesuai kategori pakan / ikan
+                                    Text(
+                                      product.description,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    // Tag Varian: Hanya merender info Jantan/Betina jika kategori diidentifikasi sebagai Ikan
+                                    if (isFish)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryBlue.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: const Text(
+                                          "Jantan / Betina / Pasang",
+                                          style: TextStyle(fontSize: 9, color: AppColors.primaryBlue, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    const SizedBox(height: 8),
+                                    // Baris Harga dan Aksi Keranjang Belanja
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          "Rp ${product.price.toStringAsFixed(0)}",
+                                          style: const TextStyle(
+                                            color: AppColors.primaryBlue, 
+                                            fontWeight: FontWeight.bold, 
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () {
+                                            if (widget.onAddToCart != null) {
+                                              widget.onAddToCart!(product.name);
+                                            }
+                                          },
+                                          child: const CircleAvatar(
+                                            radius: 14,
+                                            backgroundColor: AppColors.primaryBlue,
+                                            child: Icon(Icons.add_shopping_cart, size: 14, color: Colors.white),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

@@ -149,6 +149,18 @@ List<ProductModel> dummyProducts = [
     reviewCount: 30,
     status: "danger",
   ),
+  ProductModel(
+    id: "PROD-KOK-002",
+    name: "Ikan Koki Mutiara",
+    category: "Koki",
+    price: 65000,
+    stock: 17,
+    imagePath: "assets/images/categories/koki/koki_mutiara.jpg",
+    description: "Ikan Mas Koki variasi umum dengan corak panca warna (kaliko). Tersisa 1 ekor display utama.",
+    rating: 4.7,
+    reviewCount: 30,
+    status: "normal",
+  ),
 
   // -----------------------------------------------------------------------
   // KATEGORI: MOLLY

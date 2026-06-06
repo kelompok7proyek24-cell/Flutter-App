@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/colors.dart';
+
+// IMPORT DATA TERPUSAT: Menghubungkan tipe data ke arsitektur ProductModel
+import '../../../seller/data/models/product_model.dart';
 
 class ProductDetailPage extends StatefulWidget {
-  final Map<String, dynamic> product;
-  // 1. TAMBAHKAN: Parameter callback untuk sinkronisasi ke HomePage
+  // 1. PERBAIKAN: Ubah Map menjadi ProductModel agar terhindar dari runtime error typo key
+  final ProductModel product;
   final Function(String)? onAddToCart;
 
   const ProductDetailPage({
     super.key, 
     required this.product, 
-    this.onAddToCart, // Tambahkan di constructor
+    this.onAddToCart,
   });
 
   @override
@@ -21,15 +25,19 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Memeriksa tipe produk berdasarkan kategorinya
+    final isFish = ["Arwana", "Koki", "Guppy", "Molly"].contains(widget.product.category);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-          // 1. Sliver AppBar (Visual Tetap Sama)
+          // 1. Sliver AppBar Dinamis (Menampilkan Gambar Asli Produk)
           SliverAppBar(
-            expandedHeight: 400,
+            expandedHeight: 350,
             pinned: true,
             backgroundColor: Colors.white,
+            elevation: 0,
             leading: const BackButton(color: Colors.black),
             actions: [
               IconButton(onPressed: () {}, icon: const Icon(Icons.favorite_border, color: Colors.black)),
@@ -38,25 +46,43 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 color: Colors.grey[100],
-                child: const Center(child: Icon(Icons.set_meal, size: 100, color: Colors.blueAccent)), 
+                // Render gambar sesuai path yang didefinisikan pada ProductModel
+                child: Image.asset(
+                  widget.product.imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Center(
+                      child: Icon(Icons.broken_image, size: 64, color: Colors.grey),
+                    );
+                  },
+                ), 
               ),
             ),
           ),
 
-          // 2. Konten Detail
+          // 2. Konten Detail Informasi Produk
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.product['name'], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  // Nama Produk Dinamis
+                  Text(
+                    widget.product.name, 
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
-                  Text(widget.product['price'], style: const TextStyle(fontSize: 22, color: Colors.blue, fontWeight: FontWeight.bold)),
+                  
+                  // Harga Produk Dinamis (Format Rupiah)
+                  Text(
+                    "Rp ${widget.product.price.toStringAsFixed(0)}", 
+                    style: const TextStyle(fontSize: 20, color: AppColors.primaryBlue, fontWeight: FontWeight.bold),
+                  ),
                   
                   const SizedBox(height: 25),
 
-                  // 3. Card Penjual (AquaGrace)
+                  // 3. Card Penjual
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -65,7 +91,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     ),
                     child: Row(
                       children: [
-                        const CircleAvatar(radius: 20, backgroundColor: Colors.blue),
+                        const CircleAvatar(radius: 20, backgroundColor: AppColors.primaryBlue),
                         const SizedBox(width: 12),
                         const Expanded(
                           child: Column(
@@ -75,7 +101,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                                 children: [
                                   Text("AquaGrace", style: TextStyle(fontWeight: FontWeight.bold)),
                                   SizedBox(width: 5),
-                                  Icon(Icons.check_circle, size: 14, color: Colors.blue),
+                                  Icon(Icons.check_circle, size: 14, color: AppColors.primaryBlue),
                                 ],
                               ),
                               Text("Indramayu Kota", style: TextStyle(fontSize: 12, color: Colors.grey)),
@@ -87,32 +113,36 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 25),
-
-                  // 4. Pemilihan Varian
-                  const Text("Pilih Jenis Kelamin", style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: ["Jantan", "Betina", "Sepasang"].map((variant) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: ChoiceChip(
-                          label: Text(variant),
-                          selected: selectedVariant == variant,
-                          onSelected: (val) => setState(() => selectedVariant = variant),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                  // 4. Logika Kondisional Pemilihan Varian (Hanya muncul jika jenis produk = Ikan)
+                  if (isFish) ...[
+                    const SizedBox(height: 25),
+                    const Text("Pilih Jenis Kelamin", style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: ["Jantan", "Betina", "Sepasang"].map((variant) {
+                        final isSelected = selectedVariant == variant;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: ChoiceChip(
+                            label: Text(variant),
+                            selected: isSelected,
+                            onSelected: (val) => setState(() => selectedVariant = variant),
+                            selectedColor: AppColors.primaryBlue,
+                            labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
 
                   const SizedBox(height: 30),
 
-                  // 5. Deskripsi Produk
-                  const Text("DESKRIPSI PRODUK", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  // 5. Deskripsi Produk Dinamis
+                  const Text("DESKRIPSI PRODUK", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1.1)),
                   const Divider(),
-                  const Text(
-                    "Ikan Koki Oranda kualitas kontes dengan sisik mengkilap. Sehat, lincah, dan sudah melalui proses karantina. Cocok untuk penghobi profesional.",
-                    style: TextStyle(color: Colors.grey, height: 1.5),
+                  Text(
+                    widget.product.description,
+                    style: const TextStyle(color: Colors.black87, height: 1.5, fontSize: 14),
                   ),
                 ],
               ),
@@ -121,7 +151,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ],
       ),
       
-      // 6. Bottom Bar (Koneksi ke Sistem Keranjang)
+      // 6. Bottom Navigation Bar (Sistem Transaksi & Keranjang)
       bottomNavigationBar: Container(
         height: 80,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -131,33 +161,37 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ),
         child: Row(
           children: [
-            IconButton(onPressed: () {}, icon: const Icon(Icons.chat_outlined, color: Colors.blue)),
+            IconButton(
+              onPressed: () {}, 
+              icon: const Icon(Icons.chat_outlined, color: AppColors.primaryBlue),
+            ),
             
-            // 2. PERBAIKAN: Tombol Tambah Keranjang
+            // Tombol Tambah ke Keranjang
             IconButton(
               onPressed: () {
                 if (widget.onAddToCart != null) {
-                  widget.onAddToCart!(widget.product['name']);
+                  widget.onAddToCart!(widget.product.name);
                 }
               }, 
-              icon: const Icon(Icons.add_shopping_cart, color: Colors.blue)
+              icon: const Icon(Icons.add_shopping_cart, color: AppColors.primaryBlue),
             ),
             
             const SizedBox(width: 10),
             
-            // 3. PERBAIKAN: Tombol Beli Sekarang
+            // Tombol Beli Sekarang
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
                   if (widget.onAddToCart != null) {
-                    widget.onAddToCart!(widget.product['name']);
+                    widget.onAddToCart!(widget.product.name);
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: AppColors.primaryBlue,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text("Beli Sekarang", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: const Text("Beli Sekarang", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
               ),
             ),
           ],
