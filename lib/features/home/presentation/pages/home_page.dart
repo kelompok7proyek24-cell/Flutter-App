@@ -6,6 +6,24 @@ import 'package:ikanku/features/product/presentation/pages/product_page.dart';
 import 'package:ikanku/features/cart/presentation/pages/cart_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// IMPORT: Menghubungkan data dummy produk ikan hias dari modul seller
+import '../../../seller/data/models/product_model.dart';
+
+// DATA MODEL ARTIKEL: Agar struktur data 3 artikel seragam dan siap di-edit
+class ArticleModel {
+  final String id;
+  final String title;
+  final String subtitle;
+  final String imagePath;
+
+  ArticleModel({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.imagePath,
+  });
+}
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -17,13 +35,34 @@ class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
   int _cartCount = 0;
 
+  // List 3 Artikel Tips Perawatan menggunakan gambar asset yang tersedia
+  final List<ArticleModel> _dummyArticles = [
+    ArticleModel(
+      id: "a1",
+      title: "Menjaga Ekosistem Akuarium",
+      subtitle: "Cara mudah mengatur pH air untuk ikan hias.",
+      imagePath: "assets/images/banner_home.png", // Menggunakan asset terdaftar
+    ),
+    ArticleModel(
+      id: "a2",
+      title: "Nutrisi Tepat Ikan Arwana",
+      subtitle: "Jenis pakan alami untuk mempercepat mutasi warna merah.",
+      imagePath: "assets/images/banner_home.png", // Menggunakan asset terdaftar
+    ),
+    ArticleModel(
+      id: "a3",
+      title: "Budidaya Cepat Ikan Guppy",
+      subtitle: "Panduan dasar mengawinkan indukan guppy strain murni.",
+      imagePath: "assets/images/banner_home.png", // Menggunakan asset terdaftar
+    ),
+  ];
+
   @override
   void initState() {
     super.initState();
     _loadCartCount();
   }
 
-  // Mengambil data agar badge keranjang tetap sinkron
   void _loadCartCount() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -38,6 +77,7 @@ class _HomePageState extends State<HomePage> {
     });
     await prefs.setInt('cart_count', _cartCount);
     
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("$productName berhasil ditambah ke keranjang"),
@@ -48,29 +88,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // PERBAIKAN LOGIKA: Pindah tab sekaligus kirim kategori
-  void _navigateToCategory(String categoryName) {
-    // 1. Update index tab agar saat kembali, user berada di tab produk
-    setState(() {
-      _currentIndex = 1; 
-    });
-    
-    // 2. Navigasi ke halaman produk dengan filter awal
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProductPage(
-          onAddToCart: _incrementCart,
-          // Pastikan variabel ini diterima di ProductPage
-          initialCategory: categoryName, 
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    // List halaman utama
     final List<Widget> pages = [
       _buildHomeContent(), 
       ProductPage(onAddToCart: _incrementCart), 
@@ -105,7 +124,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // Header Utama
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -137,7 +156,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // Search Bar (Redirect ke Produk)
+            // Search Bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: TextField(
@@ -153,7 +172,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // Banner Promo
+            // Banner Promo (Tetap Dipertahankan)
             Container(
               margin: const EdgeInsets.all(16.0),
               height: 150,
@@ -167,92 +186,162 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // Bagian Kategori Pilihan
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text("Kategori Pilihan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(height: 12),
-            
-            SizedBox(
-              height: 100,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(left: 16),
+            // =========================================
+            // MODIFIKASI 1: PRODUK UNGGULAN & VIEW ALL
+            // =========================================
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildCategoryBox("Molly", Icons.set_meal, Colors.orange[100]!),
-                  _buildCategoryBox("Koki", Icons.bakery_dining, Colors.red[100]!),
-                  _buildCategoryBox("Guppy", Icons.waves, Colors.blue[100]!),
-                  _buildCategoryBox("Peralatan", Icons.handyman, Colors.green[100]!),
-                  _buildCategoryBox("Pakan Ikan", Icons.grain, Colors.purple[100]!),
+                  const Text("Produk Unggulan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  TextButton(
+                    onPressed: () {
+                      // Alihkan indeks menu navigasi bawah langsung ke tab Produk (indeks 1)
+                      setState(() => _currentIndex = 1);
+                    },
+                    child: const Text("View All", style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold)),
+                  ),
                 ],
               ),
             ),
+            const SizedBox(height: 8),
 
+            // Grid Layout untuk menampilkan item ikan hias (Arwana, Molly, Koki, Guppy)
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: dummyProducts.length > 4 ? 4 : dummyProducts.length, // Maksimal 4 item di beranda
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.73,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemBuilder: (context, index) {
+                final product = dummyProducts[index];
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                          child: Image.asset(
+                            product.imagePath, // Mengambil gambar dinamis dari model data
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              // Fallback jika asset gambar tidak ditemukan di komputer lokal
+                              return Container(color: Colors.grey[200], child: const Icon(Icons.broken_image, color: Colors.grey));
+                            },
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              product.description, // Sinkronisasi teks deskripsi unggulan
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "Rp ${product.price.toStringAsFixed(0)}",
+                              style: const TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            // =========================================
+            // MODIFIKASI 2: 3 ARTIKEL TIPS PERAWATAN
+            // =========================================
             const Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 12),
               child: Text("Tips Perawatan", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-            _buildArticleCard(),
+            
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _dummyArticles.length, // Menampilkan 3 item artikel sesuai inisialisasi list
+              itemBuilder: (context, index) {
+                final article = _dummyArticles[index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.grey.shade200),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.asset(
+                          article.imagePath, // Render gambar dinamis pada artikel
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.green[50],
+                            child: const Icon(Icons.eco, color: Colors.green),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(article.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 2),
+                            Text(article.subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                      // Tombol Edit: Disiapkan untuk dihubungkan ke form editing artikel nantinya
+                      IconButton(
+                        icon: const Icon(Icons.edit_note, color: Colors.grey, size: 22),
+                        onPressed: () {
+                          // TODO: Hubungkan dengan fungsi CRUD teks editor artikel
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryBox(String title, IconData icon, Color color) {
-    return GestureDetector(
-      onTap: () => _navigateToCategory(title),
-      child: Container(
-        width: 85,
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.black54, size: 30),
-            const SizedBox(height: 8),
-            Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildArticleCard() {
-    return Container(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20), 
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.shade200),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              width: 60, 
-              height: 60, 
-              color: Colors.green[50], 
-              child: const Icon(Icons.eco, color: Colors.green)
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Menjaga Ekosistem Akuarium", style: TextStyle(fontWeight: FontWeight.bold)),
-                Text("Cara mudah mengatur pH air untuk ikan hias.", style: TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -71,7 +71,7 @@ class _ProductPageState extends State<ProductPage> {
             padding: const EdgeInsets.all(16),
             child: Row(
               // 3. Tambahkan "Pakan Ikan" di daftar chip
-              children: ["Semua", "Koki", "Guppy", "Molly", "Peralatan", "Pakan Ikan"].map((cat) {
+              children: ["Semua","Arwana", "Koki", "Guppy", "Molly", "Peralatan", "Pakan Ikan"].map((cat) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(

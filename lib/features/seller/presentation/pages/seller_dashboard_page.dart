@@ -2,6 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'seller_setting_page.dart'; // Import halaman setting agar terkoneksi
+import 'package:ikanku/features/seller/data/models/product_model.dart';
+import 'package:ikanku/features/seller/widgets/inventory_item_tile.dart';
+import 'package:ikanku/features/seller/widgets/revenue_card.dart';
 
 class SellerDashboardPage extends StatefulWidget {
   const SellerDashboardPage({super.key});

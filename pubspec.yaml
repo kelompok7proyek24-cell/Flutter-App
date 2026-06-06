@@ -55,12 +55,12 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   uses-material-design: true
-
-  # Di sini kita memasukan Konfigurasi Aset proyek ikan hias kita:
   assets:
+    - assets/images/
     - assets/images/categories/arwana/
     - assets/images/categories/guppy/
     - assets/images/categories/koki/
+    - assets/images/categories/molly/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
