@@ -34,7 +34,7 @@ class _ProductPageState extends State<ProductPage> {
   Widget build(BuildContext context) {
     // 2. LOGIKA FILTER: Buat list baru berdasarkan kategori yang dipilih
     // Jika "Semua", ambil semua. Jika tidak, filter berdasarkan key 'cat'.
-    final List<Map<String, dynamic>> _filteredProducts = _selectedCat == "Semua"
+    final List<Map<String, dynamic>> filteredProducts = _selectedCat == "Semua"
         ? _products
         : _products.where((p) => p['cat'] == _selectedCat).toList();
 
@@ -93,7 +93,7 @@ class _ProductPageState extends State<ProductPage> {
 
           // Grid Produk
           Expanded(
-            child: _filteredProducts.isEmpty 
+            child: filteredProducts.isEmpty 
               ? const Center(child: Text("Produk tidak ditemukan")) 
               : GridView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -104,9 +104,9 @@ class _ProductPageState extends State<ProductPage> {
                     mainAxisSpacing: 16,
                   ),
                   // 4. GUNAKAN HASIL FILTER DISINI
-                  itemCount: _filteredProducts.length,
+                  itemCount: filteredProducts.length,
                   itemBuilder: (context, index) {
-                    final p = _filteredProducts[index];
+                    final p = filteredProducts[index];
                     return GestureDetector(
                       onTap: () => Navigator.push(context, MaterialPageRoute(
                         builder: (context) => ProductDetailPage(

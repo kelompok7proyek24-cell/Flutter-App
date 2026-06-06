@@ -5,7 +5,6 @@ import '../widgets/order_status_card.dart';
 import 'my_orders_page.dart'; 
 // Import halaman pesan dan chat
 import 'package:ikanku/features/chat/presentation/pages/message_list_page.dart';
-import 'package:ikanku/features/chat/presentation/pages/chat_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});

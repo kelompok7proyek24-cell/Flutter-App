@@ -5,7 +5,7 @@ class ArticleCard extends StatelessWidget {
   final String subtitle;
   final String timeRead;
 
-  const ArticleCard({
+  const ArticleCard({super.key, 
     required this.title,
     required this.subtitle,
     required this.timeRead,

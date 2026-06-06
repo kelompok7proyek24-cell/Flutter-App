@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:ikanku/core/constants/colors.dart';
 
 class LoginPage extends StatelessWidget {
+  const LoginPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -10,7 +12,7 @@ class LoginPage extends StatelessWidget {
         child: Column(
           children: [
             // Bagian Header Logo (Meniru visual desain kamu)
-            Container(
+            SizedBox(
               height: 250,
               width: double.infinity,
               child: Center(

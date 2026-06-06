@@ -1,7 +1,6 @@
 // Path: lib/features/seller/presentation/pages/seller_registration_page.dart
 
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'seller_dashboard_page.dart';
@@ -10,12 +9,10 @@ class SellerRegistrationPage extends StatefulWidget {
   const SellerRegistrationPage({super.key});
 
   @override
-  State<SellerRegistrationPage> createState() =>
-      _SellerRegistrationPageState();
+  State<SellerRegistrationPage> createState() => _SellerRegistrationPageState();
 }
 
-class _SellerRegistrationPageState
-    extends State<SellerRegistrationPage> {
+class _SellerRegistrationPageState extends State<SellerRegistrationPage> {
   // =========================
   // FORM KEY
   // =========================
@@ -24,26 +21,16 @@ class _SellerRegistrationPageState
   // =========================
   // CONTROLLERS
   // =========================
-  final TextEditingController _storeNameController =
-      TextEditingController();
-
-  final TextEditingController _emailController =
-      TextEditingController();
-
-  final TextEditingController _phoneController =
-      TextEditingController();
-
-  final TextEditingController _addressController =
-      TextEditingController();
-
-  final TextEditingController _descriptionController =
-      TextEditingController();
+  final TextEditingController _storeNameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   // =========================
   // IMAGE PICKER
   // =========================
   final ImagePicker _picker = ImagePicker();
-
   File? _ktpImage;
   File? _storeLogo;
 
@@ -82,13 +69,15 @@ class _SellerRegistrationPageState
   }
 
   // =========================
-  // REGISTER STORE
+  // REGISTER STORE & NAVIGATION
   // =========================
   Future<void> _registerStore() async {
+    // 1. Validasi struktur form textfield
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
+    // 2. Validasi komponen dokumen fisik (KTP)
     if (_ktpImage == null) {
       _showSnackbar("Upload KTP terlebih dahulu");
       return;
@@ -100,27 +89,34 @@ class _SellerRegistrationPageState
 
     try {
       // ==========================================
-      // TODO:
-      // CONNECT API HERE
+      // SIMULASI KONEKSI API / NETWORK DELAY
       // ==========================================
-
       await Future.delayed(const Duration(seconds: 2));
 
+      // Asynchronous Guard: Memastikan widget masih eksis di widget tree sebelum route perpindahan dilakukan
       if (!mounted) return;
 
       _showSnackbar("Seller berhasil didaftarkan");
 
       // ==========================================
-      // TODO:
-      // NAVIGATE TO DASHBOARD
+      // NAVIGASI INTEGRASI KE DASHBOARD
       // ==========================================
+      // Menggunakan pushReplacement agar halaman registrasi dihancurkan dari stack memori
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SellerDashboardPage(),
+        ),
+      );
 
     } catch (e) {
       _showSnackbar("Terjadi kesalahan");
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -150,7 +146,6 @@ class _SellerRegistrationPageState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF7F9FC),
-
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -162,18 +157,15 @@ class _SellerRegistrationPageState
           ),
         ),
       ),
-
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-
               // =========================================
               // KTP CARD
               // =========================================
-
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -186,7 +178,6 @@ class _SellerRegistrationPageState
                 ),
                 child: Column(
                   children: [
-
                     Container(
                       width: 70,
                       height: 70,
@@ -200,9 +191,7 @@ class _SellerRegistrationPageState
                         size: 36,
                       ),
                     ),
-
                     const SizedBox(height: 18),
-
                     const Text(
                       "Verifikasi Identitas (KTP)",
                       style: TextStyle(
@@ -210,9 +199,7 @@ class _SellerRegistrationPageState
                         fontSize: 16,
                       ),
                     ),
-
                     const SizedBox(height: 8),
-
                     const Text(
                       "Unggah foto KTP untuk mempercepat proses verifikasi seller",
                       textAlign: TextAlign.center,
@@ -221,9 +208,7 @@ class _SellerRegistrationPageState
                         fontSize: 13,
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
                     if (_ktpImage != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
@@ -234,10 +219,7 @@ class _SellerRegistrationPageState
                           fit: BoxFit.cover,
                         ),
                       ),
-
-                    if (_ktpImage != null)
-                      const SizedBox(height: 18),
-
+                    if (_ktpImage != null) const SizedBox(height: 18),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -248,19 +230,14 @@ class _SellerRegistrationPageState
                           elevation: 0,
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 14),
-
                     const Text(
                       "KERAHASIAAN DATA ANDA TERJAMIN",
                       style: TextStyle(
@@ -278,19 +255,15 @@ class _SellerRegistrationPageState
               // =========================================
               // STORE LOGO
               // =========================================
-
               GestureDetector(
                 onTap: _pickStoreLogo,
                 child: Column(
                   children: [
-
                     CircleAvatar(
                       radius: 42,
                       backgroundColor: Colors.grey.shade300,
                       backgroundImage:
-                          _storeLogo != null
-                              ? FileImage(_storeLogo!)
-                              : null,
+                          _storeLogo != null ? FileImage(_storeLogo!) : null,
                       child: _storeLogo == null
                           ? const Icon(
                               Icons.store,
@@ -299,9 +272,7 @@ class _SellerRegistrationPageState
                             )
                           : null,
                     ),
-
                     const SizedBox(height: 10),
-
                     const Text(
                       "Unggah Logo Toko",
                       style: TextStyle(
@@ -316,16 +287,13 @@ class _SellerRegistrationPageState
               const SizedBox(height: 28),
 
               // =========================================
-              // AUTO SECTION
+              // INFO SECTION
               // =========================================
-
               _buildSectionTitle(
                 Icons.check_circle_outline,
                 "Informasi Seller",
               ),
-
               const SizedBox(height: 18),
-
               _buildTextField(
                 label: "Nama Toko",
                 hint: "Masukkan nama toko",
@@ -337,7 +305,6 @@ class _SellerRegistrationPageState
                   return null;
                 },
               ),
-
               _buildTextField(
                 label: "Email Toko",
                 hint: "contact@store.com",
@@ -347,15 +314,12 @@ class _SellerRegistrationPageState
                   if (value == null || value.isEmpty) {
                     return "Email wajib diisi";
                   }
-
                   if (!value.contains("@")) {
                     return "Format email tidak valid";
                   }
-
                   return null;
                 },
               ),
-
               _buildTextField(
                 label: "Nomor Telepon",
                 hint: "+62 812...",
@@ -374,14 +338,11 @@ class _SellerRegistrationPageState
               // =========================================
               // LOCATION SECTION
               // =========================================
-
               _buildSectionTitle(
                 Icons.location_on_outlined,
                 "Lokasi & Deskripsi",
               ),
-
               const SizedBox(height: 18),
-
               _buildTextField(
                 label: "Alamat Toko",
                 hint: "Jl. Kemang Raya No.12",
@@ -394,7 +355,6 @@ class _SellerRegistrationPageState
                   return null;
                 },
               ),
-
               _buildTextField(
                 label: "Deskripsi Toko",
                 hint: "Jelaskan toko dan jenis ikan anda",
@@ -413,22 +373,17 @@ class _SellerRegistrationPageState
               // =========================================
               // BUTTON
               // =========================================
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed:
-                      _isLoading ? null : _registerStore,
+                  onPressed: _isLoading ? null : _registerStore,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 18,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                   ),
                   child: _isLoading
@@ -449,7 +404,6 @@ class _SellerRegistrationPageState
                         ),
                 ),
               ),
-
               const SizedBox(height: 30),
             ],
           ),
@@ -459,13 +413,9 @@ class _SellerRegistrationPageState
   }
 
   // =========================================
-  // SECTION TITLE
+  // SECTION TITLE WIDGET
   // =========================================
-
-  Widget _buildSectionTitle(
-      IconData icon,
-      String title,
-      ) {
+  Widget _buildSectionTitle(IconData icon, String title) {
     return Row(
       children: [
         Icon(icon, color: Colors.blue),
@@ -482,25 +432,21 @@ class _SellerRegistrationPageState
   }
 
   // =========================================
-  // TEXT FIELD
+  // TEXT FIELD WIDGET
   // =========================================
-
   Widget _buildTextField({
     required String label,
     required String hint,
     required TextEditingController controller,
     required String? Function(String?) validator,
-    TextInputType keyboardType =
-        TextInputType.text,
+    TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Text(
             label.toUpperCase(),
             style: const TextStyle(
@@ -509,9 +455,7 @@ class _SellerRegistrationPageState
               fontWeight: FontWeight.w600,
             ),
           ),
-
           const SizedBox(height: 8),
-
           TextFormField(
             controller: controller,
             keyboardType: keyboardType,
@@ -521,22 +465,17 @@ class _SellerRegistrationPageState
               hintText: hint,
               filled: true,
               fillColor: Colors.white,
-              contentPadding:
-                  const EdgeInsets.symmetric(
+              contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 16,
               ),
               border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
               ),
               errorBorder: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(16),
-                borderSide: const BorderSide(
-                  color: Colors.red,
-                ),
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Colors.red),
               ),
             ),
           ),

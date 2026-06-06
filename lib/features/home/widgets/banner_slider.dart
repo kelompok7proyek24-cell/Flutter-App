@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/colors.dart';
 
 class BannerSlider extends StatelessWidget {
+  const BannerSlider({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Container(
