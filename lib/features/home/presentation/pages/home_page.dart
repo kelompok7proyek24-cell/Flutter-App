@@ -6,23 +6,17 @@ import 'package:ikanku/features/product/presentation/pages/product_page.dart';
 import 'package:ikanku/features/cart/presentation/pages/cart_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// IMPORT: Menghubungkan data dummy produk ikan hias dari modul seller
+// IMPORT MODUL SELLER: Menghubungkan data dummy produk dari modul seller
 import '../../../seller/data/models/product_model.dart';
+import 'package:ikanku/features/product/presentation/pages/product_detail_page.dart';
 
-// DATA MODEL ARTIKEL: Agar struktur data 3 artikel seragam dan siap di-edit
-class ArticleModel {
-  final String id;
-  final String title;
-  final String subtitle;
-  final String imagePath;
-
-  ArticleModel({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.imagePath,
-  });
-}
+// =========================================================================
+// PERBAIKAN ARSITEKTUR: Mengimpor Fitur Artikel Terpusat (Data & UI Halaman)
+// =========================================================================
+import 'package:ikanku/features/article/data/models/article_model.dart';
+import 'package:ikanku/features/article/presentation/pages/article_page.dart';
+import 'package:ikanku/features/article/presentation/pages/article_detail_page.dart';
+import 'package:ikanku/features/article/presentation/pages/edit_article_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -34,28 +28,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
   int _cartCount = 0;
-
-  // PERBAIKAN: Jalur gambar dikosongkan agar beralih ke icon eco bawaan (bukan banner lagi)
-  final List<ArticleModel> _dummyArticles = [
-    ArticleModel(
-      id: "a1",
-      title: "Menjaga Ekosistem Akuarium",
-      subtitle: "Cara mudah mengatur pH air untuk ikan hias.",
-      imagePath: "", 
-    ),
-    ArticleModel(
-      id: "a2",
-      title: "Nutrisi Tepat Ikan Arwana",
-      subtitle: "Jenis pakan alami untuk mempercepat mutasi warna merah.",
-      imagePath: "", 
-    ),
-    ArticleModel(
-      id: "a3",
-      title: "Budidaya Cepat Ikan Guppy",
-      subtitle: "Panduan dasar mengawinkan indukan guppy strain murni.",
-      imagePath: "", 
-    ),
-  ];
 
   @override
   void initState() {
@@ -90,10 +62,11 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // SINKRONISASI HALAMAN: Mengarahkan Tab index ke-2 ke halaman ArticlePage yang baru dibuat
     final List<Widget> pages = [
       _buildHomeContent(), 
       ProductPage(onAddToCart: _incrementCart), 
-      const Center(child: Text("Halaman Artikel")), 
+      const ArticlePage(), // <-- Terhubung ke halaman daftar edukasi utama
       const CartPage(), 
       const ProfilePage(), 
     ];
@@ -172,9 +145,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-// =========================================
-            // PERBAIKAN KOTAK BANNER: AMAN DARI ERROR GRADIENT
-            // =========================================
+            // Kotak Banner Promo
             Container(
               margin: const EdgeInsets.all(16.0),
               height: 150,
@@ -185,10 +156,9 @@ class _HomePageState extends State<HomePage> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(15),
                 child: Image.asset(
-                  "assets/images/banner_home.png", // Memanggil file gambar banner utama
+                  "assets/images/banner_home.png", 
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    // Proteksi sistem: Gradient dipindahkan ke dalam BoxDecoration agar sintaksis valid
                     return Container(
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
@@ -211,9 +181,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // =========================================
-            // MODIFIKASI 1: PRODUK UNGGULAN & VIEW ALL
-            // =========================================
+            // Produk Unggulan Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
@@ -231,7 +199,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 8),
 
-            // Grid Layout untuk menampilkan item ikan hias (Arwana, Molly, Koki, Guppy)
+            // Grid Layout Produk Unggulan (Bisa Di-klik ke Detail)
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -245,65 +213,79 @@ class _HomePageState extends State<HomePage> {
               ),
               itemBuilder: (context, index) {
                 final product = dummyProducts[index];
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
-                          child: Image.asset(
-                            product.imagePath,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[200], 
-                                child: const Icon(Icons.broken_image, color: Colors.grey)
-                              );
-                            },
+                return InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProductDetailPage(
+                          product: product,
+                          onAddToCart: _incrementCart,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                            child: Image.asset(
+                              product.imagePath,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[200], 
+                                  child: const Icon(Icons.broken_image, color: Colors.grey)
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              product.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              product.description,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              "Rp ${product.price.toStringAsFixed(0)}",
-                              style: const TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
-                          ],
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                product.description,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                "Rp ${product.price.toStringAsFixed(0)}",
+                                style: const TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },
             ),
 
             // =========================================
-            // MODIFIKASI 2: 3 ARTIKEL TIPS PERAWATAN
+            // INTEGRASI LINK: 3 ARTIKEL TIPS PERAWATAN
             // =========================================
             const Padding(
               padding: EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 12),
@@ -314,53 +296,62 @@ class _HomePageState extends State<HomePage> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _dummyArticles.length,
+              itemCount: dummyArticles.length, // Membaca data dummy global dari modul article
               itemBuilder: (context, index) {
-                final article = _dummyArticles[index];
+                final article = dummyArticles[index];
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border.all(color: Colors.grey.shade200),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.asset(
-                          article.imagePath,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            width: 60,
-                            height: 60,
-                            color: Colors.green[50],
-                            // Mengembalikan visual ke ikon daun default yang bersih
-                            child: const Icon(Icons.eco, color: Colors.green),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      // Navigasi ke Halaman Detail Bacaan Artikel ketika Card diklik
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ArticleDetailPage(article: article),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: article.imagePath.isNotEmpty
+                                ? Image.asset(article.imagePath, width: 60, height: 60, fit: BoxFit.cover)
+                                : Container(
+                                    width: 60,
+                                    height: 60,
+                                    color: Colors.green[50],
+                                    child: const Icon(Icons.eco, color: Colors.green),
+                                  ),
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(article.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 2),
+                                Text(article.subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit_note, color: Colors.grey, size: 22),
+                            onPressed: () {
+                              // Slot Navigasi Form Update (Akan ditangani di tahap pembuatan Edit Halaman)
+                            },
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(article.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 2),
-                            Text(article.subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.edit_note, color: Colors.grey, size: 22),
-                        onPressed: () {
-                          // Tempat integrasi navigasi form update data artikel
-                        },
-                      ),
-                    ],
+                    ),
                   ),
                 );
               },
