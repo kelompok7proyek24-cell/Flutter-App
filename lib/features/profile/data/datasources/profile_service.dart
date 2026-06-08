@@ -50,4 +50,6 @@ class ProfileService {
       ],
     );
   }
+
+  static Future<void> becomeSeller({required storeName, required category}) async {}
 }

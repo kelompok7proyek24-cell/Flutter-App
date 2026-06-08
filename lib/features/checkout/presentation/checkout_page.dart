@@ -1,4 +1,8 @@
+// Path: lib/features/checkout/presentation/checkout_page.dart
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert'; // DITAMBAHKAN untuk memproses jsonEncode/jsonDecode data riwayat
 import '../../../../core/constants/colors.dart';
 import 'package:ikanku/features/seller/data/models/product_model.dart';
 
@@ -21,6 +25,69 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final double _shippingFee = 15000;
   String _selectedPayment = "Transfer Bank (VA)";
   String _selectedCourier = "Reguler (J&T Express)";
+
+  // SINKRONISASI DATA 1: Menyimpan pesanan baru ke dalam SharedPreferences riwayat
+  Future<void> _simpanKeRiwayatPesanan() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Mengambil riwayat lama jika sudah pernah ada transaksi sebelumnya
+    List<String> riwayatLama = prefs.getStringList('history_orders') ?? [];
+
+    // Menyusun objek transaksi terstruktur agar bisa dibaca my_orders_page.dart
+    Map<String, dynamic> pesananBaru = {
+      'id_pesanan': 'ORD-${DateTime.now().millisecondsSinceEpoch}',
+      'status': 'Dikemas', // Otomatis masuk ke tab 'Dikemas'
+      'tanggal': '09 Juni 2026',
+      'items': widget.checkoutItems.map((item) {
+        final ProductModel prod = item['product'] as ProductModel;
+        return {
+          'id': prod.id,
+          'name': prod.name,
+          'price': prod.price.toInt(),
+          'quantity': item['quantity'] as int,
+          'variant': item['variant'] ?? "Normal",
+          'imagePath': prod.imagePath,
+        };
+      }).toList(),
+      'total_pembayaran': widget.totalPrice + _shippingFee,
+    };
+
+    // Menyisipkan transaksi terbaru di urutan paling atas (index 0)
+    riwayatLama.insert(0, jsonEncode(pesananBaru));
+    
+    // Simpan kembali list ke SharedPreferences lokal
+    await prefs.setStringList('history_orders', riwayatLama);
+  }
+
+  // SINKRONISASI DATA 2: Menghapus item yang dibayar dari penyimpanan keranjang belanja
+  Future<void> _handleSelesaiCheckout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Loop semua item yang didelegasikan dari keranjang untuk dihapus key prefs-nya
+    for (var item in widget.checkoutItems) {
+      final ProductModel prod = item['product'] as ProductModel;
+      String variant = item['variant'] ?? "Normal";
+      String cartKey = 'cart_qty_${prod.id}_#_${variant}';
+      
+      await prefs.remove(cartKey);
+    }
+
+    // Hitung ulang sisa item di keranjang belanja jika ada item lain yang tidak dicentang
+    final keys = prefs.getKeys();
+    int sisaItems = 0;
+    for (String key in keys) {
+      if (key.startsWith('cart_qty_')) {
+        sisaItems += prefs.getInt(key) ?? 0;
+      }
+    }
+    // Setel ulang counter badge global sesuai sisa data asli
+    await prefs.setInt('cart_count', sisaItems); 
+
+    if (context.mounted) {
+      // Mengarahkan user kembali ke Root/Halaman Utama (State Toko & Keranjang disegarkan)
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +112,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
       body: Column(
         children: [
-          // KONTEN UTAMA (Scrollable & Responsive)
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
@@ -94,7 +160,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ),
                   const SizedBox(height: 20),
 
-                  // 2. SEKSI RINGKASAN PRODUK YANG DIBELI (Sudah Diperbaiki)
+                  // 2. SEKSI RINGKASAN PRODUK
                   _buildSectionTitle("Produk dipesan"),
                   const SizedBox(height: 8),
                   ListView.builder(
@@ -103,9 +169,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     itemCount: widget.checkoutItems.length,
                     itemBuilder: (context, index) {
                       final item = widget.checkoutItems[index];
-                      // Melakukan explicit casting untuk menghilangkan error sintaksis
                       final ProductModel product = item['product'] as ProductModel;
                       final int quantity = item['quantity'] as int;
+                      final String variant = item['variant'] ?? "Normal";
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
@@ -138,7 +204,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    product.name,
+                                    variant == "Normal" ? product.name : "${product.name} ($variant)",
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
@@ -162,7 +228,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ),
                   const SizedBox(height: 12),
 
-                  // 3. OPSI PENGIRIMAN & OPSI PEMBAYARAN
+                  // 3. DROPDOWN OPSI
                   _buildDropdownSection(
                     title: "Metode Pengiriman",
                     value: _selectedCourier,
@@ -174,13 +240,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   _buildDropdownSection(
                     title: "Metode Pembayaran",
                     value: _selectedPayment,
-                    items: ["Transfer Bank (VA)", "E-Wallet (Dana/OVO)", "COD (Bayar di Tempat)"],
+                    items: ["Transfer Bank (VA)", "E-Wallet (Dana/OVO)"],
                     icon: Icons.account_balance_wallet_outlined,
                     onChanged: (val) => setState(() => _selectedPayment = val!),
                   ),
                   const SizedBox(height: 20),
 
-                  // 4. RINCIAN BIAYA AKHIR
+                  // 4. RINCIAN BIAYA
                   _buildSectionTitle("Rincian Pembayaran"),
                   const SizedBox(height: 8),
                   Container(
@@ -217,7 +283,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           // PANEL BUTTON BOTTOM
           Container(
             padding: EdgeInsets.only(
-              left: 20, right: 20, top: 16, 
+              left: 20, right: 20, top: 16,
               bottom: isLandscape ? 16 : 24,
             ),
             decoration: BoxDecoration(
@@ -232,8 +298,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: () {
-                    _showSuccessDialog(context);
+                  onPressed: () async {
+                    // Pemicu eksekusi penyimpanan ke lokal database simulasi sebelum dialog tampil
+                    await _simpanKeRiwayatPesanan();
+                    if (context.mounted) {
+                      _showSuccessDialog(context);
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryBlue,
@@ -253,7 +323,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // REUSABLE COMPONENT: Judul Seksi
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
@@ -261,7 +330,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // REUSABLE COMPONENT: Dropdown Pilihan Kurir & Pembayaran
   Widget _buildDropdownSection({
     required String title,
     required String value,
@@ -306,7 +374,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // REUSABLE COMPONENT: Baris Rincian Biaya
   Widget _buildSummaryRow(String label, double amount) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -317,12 +384,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // INTERAKSI AKHIR: Dialog Sukses Transaksi
   void _showSuccessDialog(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           content: Column(
@@ -351,8 +417,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 height: 44,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.pop(context);
+                    // Tutup Dialog Sukses terlebih dahulu
+                    Navigator.pop(dialogContext);
+                    // Jalankan fungsi penghapusan item keranjang & pop stack navigasi
+                    _handleSelesaiCheckout(context);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryBlue,

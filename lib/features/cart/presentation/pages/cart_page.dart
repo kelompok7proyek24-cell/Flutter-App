@@ -1,7 +1,10 @@
+// Path: lib/features/cart/presentation/pages/cart_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/colors.dart';
-// IMPORT SELLER MODEL: Membawa data dummy terpusat (termasuk path gambar produk)
+import '../../data/models/cart_item_model.dart';
+// IMPORT SELLER MODEL: Membawa data dummy terpusat asli milikmu
 import '../../../seller/data/models/product_model.dart';
 import 'package:ikanku/features/checkout/presentation/checkout_page.dart';
 
@@ -13,8 +16,8 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-  // Map untuk menyimpan Unique ID (gabungan id_#_varian) dan jumlah kuantitas
-  Map<String, int> _cartItems = {};
+  // Menggunakan list objek model terstruktur dari data/models/
+  List<CartItemModel> _cartItems = [];
   bool _isLoading = true;
 
   @override
@@ -23,81 +26,131 @@ class _CartPageState extends State<CartPage> {
     _loadCartData();
   }
 
-  // MEMBACA DATA DARI PENYIMPANAN LOKAL BERBASIS MULTI-VARIAN
+  // MEMBACA DATA DARI PENYIMPANAN LOKAL BERBASIS MULTI-VARIAN (INTEGRASI LOGIKA LAMA)
   Future<void> _loadCartData() async {
     final prefs = await SharedPreferences.getInstance();
-    Map<String, int> tempCart = {};
-
-    // Ambil semua kunci yang tersimpan di SharedPreferences
+    List<CartItemModel> tempCartList = [];
     final keys = prefs.getKeys();
 
     for (String key in keys) {
-      // Filter hanya kunci milik fitur keranjang belanja
       if (key.startsWith('cart_qty_')) {
         int quantity = prefs.getInt(key) ?? 0;
         if (quantity > 0) {
-          // Ekstrak bagian identitas setelah teks prefix 'cart_qty_'
-          String cartItemId = key.replaceFirst('cart_qty_', '');
-          tempCart[cartItemId] = quantity;
+          String cartItemId = key.replaceFirst('cart_qty_', ''); // Contoh: "P001_#_Jantan"
+          
+          // Memecah kembali ID produk asli dan informasi variannya
+          List<String> parts = cartItemId.split('_#_');
+          String productId = parts[0];
+          String variantName = parts.length > 1 ? parts[1] : "Normal";
+
+          try {
+            // Mencari kesocokan data produk di data master seller
+            final product = dummyProducts.firstWhere((prod) => prod.id == productId);
+            
+            // Bungkus data ke dalam CartItemModel
+            tempCartList.add(
+              CartItemModel(
+                id: cartItemId, // Menyimpan composite key untuk keperluan update pref
+                name: product.name,
+                variant: variantName,
+                price: product.price.toInt(), // Konversi ke int sesuai blueprint model barumu
+                imagePath: product.imagePath,
+                shopName: "Aqua Grace", // Sementara di-hardcode sebelum model master produk mendukung field toko
+                quantity: quantity,
+                isChecked: true,
+              ),
+            );
+          } catch (e) {
+            // Menghindari crash jika id produk di local storage tidak ditemukan di dummy master
+            debugPrint("Produk dengan ID $productId tidak ditemukan.");
+          }
         }
       }
     }
 
     setState(() {
-      _cartItems = tempCart;
+      _cartItems = tempCartList;
       _isLoading = false;
     });
   }
 
-  // FUNGSI AKSI: Tambah (+1) atau Kurang (-1) kuantitas item berdasarkan Unique ID
-  Future<void> _updateQuantity(String cartItemId, int delta) async {
+  // FUNGSI AKSI GABUNGAN: Update UI sekaligus sinkronisasi ke SharedPreferences lokal
+  Future<void> _updateQuantity(int index, int delta) async {
     final prefs = await SharedPreferences.getInstance();
-    int currentQty = _cartItems[cartItemId] ?? 0;
-    int updatedQty = currentQty + delta;
+    final item = _cartItems[index];
+    int updatedQty = item.quantity + delta;
 
-    if (updatedQty <= 0) {
-      _cartItems.remove(cartItemId);
-      await prefs.remove('cart_qty_$cartItemId');
-    } else {
-      _cartItems[cartItemId] = updatedQty;
-      await prefs.setInt('cart_qty_$cartItemId', updatedQty);
-    }
+    setState(() {
+      if (updatedQty <= 0) {
+        prefs.remove('cart_qty_${item.id}');
+        _cartItems.removeAt(index);
+      } else {
+        item.quantity = updatedQty;
+        prefs.setInt('cart_qty_${item.id}', updatedQty);
+      }
+    });
 
-    _syncGlobalCartCount(_cartItems);
-    setState(() {});
+    _syncGlobalCartCount();
   }
 
-  // Menyelaraskan total badge angka keranjang di menu utama (home_page)
-  Future<void> _syncGlobalCartCount(Map<String, int> cart) async {
+  // Menyelaraskan total badge angka keranjang di menu utama
+  Future<void> _syncGlobalCartCount() async {
     final prefs = await SharedPreferences.getInstance();
-    int totalItems = cart.values.fold(0, (sum, item) => sum + item);
+    int totalItems = _cartItems.fold(0, (sum, item) => sum + item.quantity);
     await prefs.setInt('cart_count', totalItems);
   }
 
-  // HITUNG OTOMATIS: Kalkulasi jumlah harga berdasarkan data master produk asli
-  double _calculateTotalPrice() {
-    double total = 0;
-    _cartItems.forEach((cartItemId, quantity) {
-      // Memisahkan ID asli dari key gabungan
-      List<String> parts = cartItemId.split('_#_');
-      String productId = parts[0];
-      
-      final product = dummyProducts.firstWhere((prod) => prod.id == productId);
-      total += product.price * quantity;
-    });
-    return total;
+  // KALKULASI OTOMATIS BERBASIS DATA MODEL TERFILTER
+  int get _totalPrice {
+    return _cartItems
+        .where((item) => item.isChecked)
+        .fold(0, (sum, item) => sum + (item.price * item.quantity));
   }
 
-  // HITUNG TOTAL ITEM
   int _calculateTotalItems() {
-    return _cartItems.values.fold(0, (sum, item) => sum + item);
+    return _cartItems.where((item) => item.isChecked).fold(0, (sum, item) => sum + item.quantity);
+  }
+
+  void _prosesCheckout() {
+    final selectedItems = _cartItems.where((item) => item.isChecked).toList();
+
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Keranjang kosong, pilih produk terlebih dahulu."),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    // MEMBANGUN PAYLOAD MAP SESUAI DENGAN KEBUTUHAN ASLI CHECKOUT_PAGE
+    List<Map<String, dynamic>> orderItems = selectedItems.map((item) {
+      List<String> parts = item.id.split('_#_');
+      String productId = parts[0];
+      final product = dummyProducts.firstWhere((prod) => prod.id == productId);
+
+      return {
+        'product': product,
+        'quantity': item.quantity,
+        'variant': item.variant,
+      };
+    }).toList();
+
+    // Pindah ke halaman checkout bawaan proyekmu secara presisi
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutPage(
+          checkoutItems: orderItems,
+          totalPrice: _totalPrice.toDouble(),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final isLandscape = mediaQuery.orientation == Orientation.landscape;
-
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.white,
@@ -106,218 +159,26 @@ class _CartPageState extends State<CartPage> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xffF5F7FA),
       appBar: AppBar(
         title: const Text(
           "Keranjang Belanja",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: _cartItems.isEmpty
-          ? _buildEmptyState()
-          : Column(
-              children: [
-                // LIST ITEM BELANJAAN (RESPONSIF MULTI-VARIAN)
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: _cartItems.length,
-                    itemBuilder: (context, index) {
-                      String cartItemId = _cartItems.keys.elementAt(index); // Contoh format: "P001_#_Jantan"
-                      int quantity = _cartItems[cartItemId]!;
-                      
-                      // Memecah kembali ID produk asli dan informasi variannya
-                      List<String> parts = cartItemId.split('_#_');
-                      String productId = parts[0];
-                      String variantName = parts.length > 1 ? parts[1] : "Normal";
-
-                      // Mengikat komponen UI dengan data master produk berdasarkan ID asli
-                      final product = dummyProducts.firstWhere((prod) => prod.id == productId);
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.shade100),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Row(
-                            children: [
-                              // KOMPONEN GAMBAR: Diambil langsung dari data path objek produk
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.asset(
-                                  product.imagePath,
-                                  width: 70,
-                                  height: 70,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      width: 70,
-                                      height: 70,
-                                      color: Colors.grey[100],
-                                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-
-                              // INFORMASI NAMA (DENGAN VARIAN) DAN HARGA
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      variantName == "Normal" ? product.name : "${product.name} ($variantName)",
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "Rp ${product.price.toStringAsFixed(0)}",
-                                      style: const TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              // PENGATUR JUMLAH BARANG (SISTEM COUNTER BERBASIS ITEM ID)
-                              Row(
-                                children: [
-                                  IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    icon: const Icon(Icons.remove_circle_outline, color: Colors.grey, size: 22),
-                                    onPressed: () => _updateQuantity(cartItemId, -1),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    child: Text(
-                                      "$quantity",
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryBlue, size: 22),
-                                    onPressed: () => _updateQuantity(cartItemId, 1),
-                                  ),
-                                ],
-                              )
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                // RINGKASAN PEMBAYARAN DAN TOMBOL CHECKOUT
-                Container(
-                  padding: EdgeInsets.only(
-                    left: 20,
-                    right: 20,
-                    top: 16,
-                    bottom: isLandscape ? 16 : 24,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -5),
-                      )
-                    ],
-                  ),
-                  child: SafeArea(
-                    top: false,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "Total (${_calculateTotalItems()} Item)",
-                              style: const TextStyle(fontSize: 14, color: Colors.black54),
-                            ),
-                            Text(
-                              "Rp ${_calculateTotalPrice().toStringAsFixed(0)}",
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryBlue),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            List<Map<String, dynamic>> orderItems = [];
-                            
-                            _cartItems.forEach((cartItemId, quantity) {
-                              List<String> parts = cartItemId.split('_#_');
-                              String productId = parts[0];
-                              String variantName = parts.length > 1 ? parts[1] : "Normal";
-
-                              final product = dummyProducts.firstWhere((prod) => prod.id == productId);
-                              
-                              orderItems.add({
-                                'product': product,
-                                'quantity': quantity,
-                                'variant': variantName, // Data varian diturunkan agar siap dibaca CheckoutPage
-                              });
-                            });
-
-                            if (orderItems.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Keranjang kosong, pilih produk terlebih dahulu."),
-                                  backgroundColor: Colors.redAccent,
-                                ),
-                              );
-                              return;
-                            }
-
-                            // Berpindah ke Halaman Checkout membawa payload data terstruktur terbaru
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CheckoutPage(
-                                  checkoutItems: orderItems,
-                                  totalPrice: _calculateTotalPrice(),
-                                ),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryBlue,
-                            minimumSize: const Size(double.infinity, 48),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            "Lanjutkan Ke Checkout",
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+      body: _cartItems.isEmpty ? _buildEmptyCart() : _buildCartList(),
+      bottomNavigationBar: _cartItems.isEmpty ? null : _buildBottomBar(),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyCart() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -329,6 +190,126 @@ class _CartPageState extends State<CartPage> {
             style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCartList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: _cartItems.length,
+      itemBuilder: (context, index) {
+        final item = _cartItems[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade100),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Checkbox seleksi item keranjang
+              Checkbox(
+                value: item.isChecked,
+                activeColor: AppColors.primaryBlue,
+                onChanged: (val) {
+                  setState(() {
+                    item.isChecked = val ?? true;
+                  });
+                },
+              ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  item.imagePath,
+                  width: 70,
+                  height: 70,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 70,
+                    height: 70,
+                    color: Colors.blue[50],
+                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.variant == "Normal" ? item.name : "${item.name} (${item.variant})",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Rp ${item.price}",
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryBlue, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.remove_circle_outline, color: Colors.grey.shade400),
+                    onPressed: () => _updateQuantity(index, -1),
+                  ),
+                  Text("${item.quantity}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryBlue),
+                    onPressed: () => _updateQuantity(index, 1),
+                  ),
+                ],
+              )
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBottomBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xffEEEEEE))),
+      ),
+      child: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Total (${_calculateTotalItems()} Item)", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(height: 4),
+                Text(
+                  "Rp $_totalPrice",
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryBlue),
+                ),
+              ],
+            ),
+            ElevatedButton(
+              onPressed: _prosesCheckout,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryBlue,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                elevation: 0,
+              ),
+              child: const Text("Lanjutkan Ke Checkout", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            )
+          ],
+        ),
       ),
     );
   }

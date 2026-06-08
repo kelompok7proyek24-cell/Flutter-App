@@ -67,6 +67,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       profileImagePath: _imagePath,
       paymentMethod: currentProfile.paymentMethod, // Tetap amankan data lama jika ada
       addresses: _currentAddresses,
+      isSeller: currentProfile.isSeller,
     );
 
     await ProfileService.saveProfile(updatedUser);

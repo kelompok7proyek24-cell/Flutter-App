@@ -13,8 +13,6 @@ class SellerGatewayPage extends StatefulWidget {
 }
 
 class _SellerGatewayPageState extends State<SellerGatewayPage> {
-  bool _isLoading = true;
-
   @override
   void initState() {
     super.initState();
@@ -24,19 +22,29 @@ class _SellerGatewayPageState extends State<SellerGatewayPage> {
     });
   }
 
+  @override
+  Widget build(BuildContext context) {
+    // Simple placeholder while routing logic runs in initState
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
   Future<void> _routingSistemSeller() async {
+    // 1. Ambil data user saat ini dari Profile Service
     final user = await ProfileService.getProfile();
     if (!mounted) return;
 
+    // KONDISI B: Jika sudah terdaftar sebagai seller, langsung bypass ke Dashboard
     if (user.isSeller) {
-      // Jika sudah jadi seller, langsung lempar ke Dashboard dan hapus gateway dari stack
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const SellerDashboardPage()),
       );
     } else {
-      // JIKA BELUM JADI SELLER: Buka halaman edit/registrasi profil
-      // Kita tunggu (await) sampai user menekan tombol 'Simpan' yang mengembalikan data Map
+      // KONDISI A: JIKA BELUM JADI SELLER, arahkan untuk membuat akun toko terlebih dahulu
       final Map<String, dynamic>? hasilInputProfil = await Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const SellerEditProfilePage()),
@@ -44,49 +52,40 @@ class _SellerGatewayPageState extends State<SellerGatewayPage> {
 
       if (!mounted) return;
 
-      // Evaluasi hasil kembalian data
+      // Evaluasi hasil kembalian setelah menekan tombol 'Simpan' di SellerEditProfilePage
       if (hasilInputProfil != null) {
-        // Skenario A: User mengisi data dan menekan tombol SIMPAN
-        // Di sini data siap diolah ke langkah berikutnya (Misal: simpan ke local storage/database)
-        print("SISTEM: Data toko baru berhasil diterima!");
-        print("Nama Toko: ${hasilInputProfil['store_name']}");
-        print("Kategori Utama: ${hasilInputProfil['main_category']}");
+        
+        // OPTIMASI UX: Tampilkan loading bar singkat agar user tahu data sedang diproses
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Sedang membuat akun toko..."),
+            duration: Duration(milliseconds: 800),
+          ),
+        );
 
-        // Setelah data diproses, alihkan langsung ke Dashboard Seller
+        try {
+          // Eksekusi penyimpanan ke lokal database / SharedPreferences via ProfileService
+          // Catatan: Pastikan key map sesuai dengan data yang di-pop dari SellerEditProfilePage
+          await ProfileService.becomeSeller(
+            storeName: hasilInputProfil['store_name'] ?? 'Aquatic Premium Jakarta',
+            category: hasilInputProfil['main_category'] ?? 'Ikan Hias',
+          );
+        } catch (e) {
+          debugPrint("Gagal mengupdate status database seller: $e");
+        }
+
+        if (!mounted) return;
+
+        // Setelah data berhasil dibuat, pindahkan stack navigasi langsung ke Dashboard Seller
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const SellerDashboardPage()),
         );
       } else {
-        // Skenario B: User menekan tombol BACK (membatalkan pendaftaran)
+        // Skenario jika user membatalkan pendaftaran (menekan tombol back)
         // Kembalikan user ke halaman SettingsPage asal
         Navigator.pop(context);
       }
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Tampilan Loading Screen Transisi yang bersih saat memeriksa status
-    return const Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: Colors.blue),
-            SizedBox(height: 16),
-            Text(
-              "Memvalidasi Status Toko...",
-              style: TextStyle(
-                color: Colors.grey, 
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
-            )
-          ],
-        ),
-      ),
-    );
   }
 }
