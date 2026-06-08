@@ -1,15 +1,42 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'settings_page.dart';
 import '../widgets/profile_menu_item.dart';
 import '../widgets/order_status_card.dart';
 import 'my_orders_page.dart'; 
-// Import halaman pesan dan chat
+import 'edit_profile_page.dart'; 
 import 'package:ikanku/features/chat/presentation/pages/message_list_page.dart';
+import 'package:ikanku/features/profile/data/models/user_model.dart';
+import 'package:ikanku/features/profile/data/datasources/profile_service.dart';
+// Import halaman login untuk mengarahkan user saat logout
+import 'package:ikanku/features/auth/presentation/pages/login_page.dart'; 
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
-  // --- FUNGSI NAVIGASI PESANAN ---
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  UserModel? _user;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  // Mengambil data dari database lokal SharedPreferences
+  Future<void> _loadProfileData() async {
+    final data = await ProfileService.getProfile();
+    setState(() {
+      _user = data;
+      _isLoading = false;
+    });
+  }
+
   void _goToOrders(BuildContext context, int index) {
     Navigator.push(
       context,
@@ -21,6 +48,13 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xffF5F7FA),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xffF5F7FA),
       appBar: AppBar(
@@ -51,23 +85,29 @@ class ProfilePage extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         child: Column(
           children: [
-            const CircleAvatar(
+            // --- FOTO PROFIL DINAMIS ---
+            CircleAvatar(
               radius: 45,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/300'),
+              backgroundColor: Colors.grey[300],
+              backgroundImage: _user?.profileImagePath != null
+                  ? FileImage(File(_user!.profileImagePath!)) as ImageProvider
+                  : const NetworkImage('https://i.pravatar.cc/300'),
             ),
             const SizedBox(height: 12),
-            const Text(
-              "Azani Sakti SR", 
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            
+            // --- NAMA & EMAIL DINAMIS ---
+            Text(
+              (_user?.name != null && _user!.name.isNotEmpty) ? _user!.name : "Azani Sakti SR", 
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            const Text(
-              "azani@gmail.com",
-              style: TextStyle(color: Colors.grey),
+            Text(
+              (_user?.email != null && _user!.email.isNotEmpty) ? _user!.email : "azani@gmail.com",
+              style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 20),
 
-            // --- KARTU PESANAN ---
+            // --- KARTU PESANAN (TIDAK BERUBAH) ---
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -124,20 +164,41 @@ class ProfilePage extends StatelessWidget {
               subtitle: "12 Items Saved",
               onTap: () {},
             ),
+            
             ProfileMenuItem(
               icon: Icons.location_on_outlined,
               title: "Alamat Pengiriman",
-              subtitle: "Home, Office",
-              onTap: () {},
+              subtitle: (_user?.address != null && _user!.address.isNotEmpty)
+                  ? _user!.address
+                  : "Alamat belum diatur",
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                );
+                if (result == true) {
+                  _loadProfileData(); 
+                }
+              },
             ),
+
             ProfileMenuItem(
               icon: Icons.credit_card,
               title: "Metode Pembayaran",
-              subtitle: "Visa ****4242",
-              onTap: () {},
+              subtitle: (_user?.paymentMethod != null && _user!.paymentMethod.isNotEmpty)
+                  ? _user!.paymentMethod
+                  : "Belum diatur",
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                );
+                if (result == true) {
+                  _loadProfileData();
+                }
+              },
             ),
             
-            // MENU PESAN TERHUBUNG KE MESSAGE LIST
             ProfileMenuItem(
               icon: Icons.chat_bubble_outline,
               title: "Pesan",
@@ -150,9 +211,24 @@ class ProfilePage extends StatelessWidget {
               },
             ),
             
+            ProfileMenuItem(
+              icon: Icons.edit_outlined,
+              title: "Ubah Profil",
+              subtitle: "Perbarui data diri & foto profil",
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                );
+                if (result == true) {
+                  _loadProfileData(); 
+                }
+              },
+            ),
+            
             const SizedBox(height: 30),
 
-            // --- TOMBOL KELUAR ---
+            // --- TOMBOL KELUAR DENGAN KONFIRMASI ---
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -164,10 +240,38 @@ class ProfilePage extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: () {
-                  // Logika logout bisa ditambahkan di sini
+                  // Menampilkan dialog konfirmasi sebelum keluar
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text("Keluar Akun"),
+                        content: const Text("Apakah Anda yakin ingin keluar dari aplikasi Ikanku?"),
+                        actions: [
+                          TextButton(
+                            child: const Text("Batal"),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                          TextButton(
+                            child: const Text("Keluar", style: TextStyle(color: Colors.red)),
+                            onPressed: () {
+                              Navigator.pop(context); // Tutup dialog
+                              
+                              // Bersihkan seluruh tumpukan halaman dan arahkan ke LoginPage
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(builder: (context) => const LoginPage()),
+                                (route) => false,
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
                 },
                 icon: const Icon(Icons.logout),
-                label: const Text("Keluar"),
+                label: const Text("Keluar", style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 20),

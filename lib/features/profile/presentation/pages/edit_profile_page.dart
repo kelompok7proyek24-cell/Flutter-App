@@ -1,12 +1,101 @@
 // edit_profile_page.dart
 
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:ikanku/features/profile/data/models/user_model.dart';
+import 'package:ikanku/features/profile/data/datasources/profile_service.dart';
 
-class EditProfilePage extends StatelessWidget {
+class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
 
   @override
+  State<EditProfilePage> createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<EditProfilePage> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _paymentController = TextEditingController(); // Controller untuk Metode Pembayaran
+
+  String? _imagePath;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentData();
+  }
+
+  // Mengisi form field dengan data yang sudah tersimpan di SharedPreferences
+  Future<void> _loadCurrentData() async {
+    final user = await ProfileService.getProfile();
+    _nameController.text = user.name;
+    _emailController.text = user.email;
+    _phoneController.text = user.phone;
+    _addressController.text = user.address;
+    _paymentController.text = user.paymentMethod; // Load data metode pembayaran
+    setState(() {
+      _imagePath = user.profileImagePath;
+      _isLoading = false;
+    });
+  }
+
+  // Fungsi memicu pengambilan gambar dari galeri HP
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (pickedFile != null) {
+      setState(() {
+        _imagePath = pickedFile.path;
+      });
+    }
+  }
+
+  // Menyimpan seluruh data perubahan ke database lokal
+  Future<void> _saveProfileChanges() async {
+    final updatedUser = UserModel(
+      name: _nameController.text,
+      email: _emailController.text,
+      phone: _phoneController.text,
+      address: _addressController.text,
+      profileImagePath: _imagePath,
+      paymentMethod: _paymentController.text, // Simpan data metode pembayaran baru
+    );
+
+    await ProfileService.saveProfile(updatedUser);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profil Berhasil Diperbarui")),
+      );
+      // Kembali ke Halaman Utama Profil dengan membawa sinyal 'true' untuk auto-refresh
+      Navigator.pop(context, true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _paymentController.dispose(); // Bersihkan memori controller
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -19,56 +108,50 @@ class EditProfilePage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Stack(
-              children: [
-                const CircleAvatar(
-                  radius: 55,
-                  backgroundImage: NetworkImage(
-                    'https://i.pravatar.cc/300',
+            // --- FOTO PROFIL DENGAN FEEDBACK LIVE UPLOAD ---
+            GestureDetector(
+              onTap: _pickImage,
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 55,
+                    backgroundColor: Colors.grey[200],
+                    backgroundImage: _imagePath != null
+                        ? FileImage(File(_imagePath!)) as ImageProvider
+                        : const NetworkImage('https://i.pravatar.cc/300'),
                   ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.blue,
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      color: Colors.white,
-                      size: 18,
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blue,
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
 
             const SizedBox(height: 30),
 
-            _buildField("Nama Lengkap", "Azani Sakti SR"),
-            _buildField("Username", "@Azani"),
-            _buildField("Email", "azani@gmail.com"),
-            _buildField("Nomor Telepon", "+62 812 3456 7890"),
-
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _buildField("Jenis Kelamin", "Laki-laki"),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildField("Tanggal Lahir", "05/12/1995"),
-                ),
-              ],
-            ),
+            // --- INPUT FIELDS MENGGUNAKAN CONTROLLER ---
+            _buildField("Nama Lengkap", "Masukkan nama lengkap", _nameController),
+            _buildField("Email", "Masukkan alamat email", _emailController),
+            _buildField("Nomor Telepon", "Masukkan nomor telepon", _phoneController),
+            _buildField("Alamat Pengiriman", "Alamat lengkap pengiriman", _addressController),
+            _buildField("Metode Pembayaran Utama", "Misal: Transfer Bank (VA), Visa ****4242", _paymentController),
 
             const SizedBox(height: 30),
 
+            // --- BUTTON SIMPAN PERUBAHAN ---
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -79,10 +162,10 @@ class EditProfilePage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: _saveProfileChanges,
                 child: const Text(
                   "Simpan Perubahan",
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -92,7 +175,8 @@ class EditProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildField(String title, String hint) {
+  // Widget builder field yang disesuaikan untuk menerima parameter controller
+  Widget _buildField(String title, String hint, TextEditingController controller) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
@@ -107,6 +191,7 @@ class EditProfilePage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           TextField(
+            controller: controller,
             decoration: InputDecoration(
               hintText: hint,
               filled: true,

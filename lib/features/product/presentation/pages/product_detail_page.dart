@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/colors.dart';
 
 // IMPORT DATA TERPUSAT: Menghubungkan tipe data ke arsitektur ProductModel
 import '../../../seller/data/models/product_model.dart';
+import 'package:ikanku/features/cart/presentation/controllers/cart_controller.dart';
+import 'package:ikanku/features/cart/presentation/pages/cart_page.dart';
 
 class ProductDetailPage extends StatefulWidget {
-  // 1. PERBAIKAN: Ubah Map menjadi ProductModel agar terhindar dari runtime error typo key
   final ProductModel product;
   final Function(String)? onAddToCart;
 
@@ -21,7 +23,7 @@ class ProductDetailPage extends StatefulWidget {
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
   String selectedVariant = ""; 
-  int quantity = 1;
+  int quantity = 1; // Menyimpan jumlah pesanan lokal sebelum masuk ke keranjang
 
   @override
   Widget build(BuildContext context) {
@@ -135,6 +137,49 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     ),
                   ],
 
+                  const SizedBox(height: 25),
+
+                  // --- FITUR BARU: ATUR KUANTITAS SEBELUM MASUK KERANJANG ---
+                  const Text("Jumlah Pembelian", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.remove, size: 18),
+                              onPressed: () {
+                                if (quantity > 1) {
+                                  setState(() => quantity--);
+                                }
+                              },
+                            ),
+                            Text(
+                              "$quantity",
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add, size: 18, color: AppColors.primaryBlue),
+                              onPressed: () {
+                                setState(() => quantity++);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Text(
+                        "Total: Rp ${(widget.product.price * quantity).toStringAsFixed(0)}",
+                        style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+
                   const SizedBox(height: 30),
 
                   // 5. Deskripsi Produk Dinamis
@@ -166,11 +211,38 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               icon: const Icon(Icons.chat_outlined, color: AppColors.primaryBlue),
             ),
             
-            // Tombol Tambah ke Keranjang
+            // Perbaikan Tombol Tambah ke Keranjang Terintegrasi Global State & Local Storage
             IconButton(
-              onPressed: () {
+              onPressed: () async {
+                // Simpan data quantity ke SharedPreferences disk agar CartPage sinkron
+                final prefs = await SharedPreferences.getInstance();
+                int existingQty = prefs.getInt('cart_qty_${widget.product.id}') ?? 0;
+                await prefs.setInt('cart_qty_${widget.product.id}', existingQty + quantity);
+
+                // Menyuntikkan data produk ke dalam data list CartController global (In-Memory)
+                for (int i = 0; i < quantity; i++) {
+                  CartController().addToCart(
+                    id: widget.product.id ?? widget.product.name.hashCode.toString(), 
+                    name: widget.product.name, 
+                    price: widget.product.price.toInt(), 
+                    image: widget.product.imagePath,
+                  );
+                }
+
+                // Jalankan callback bawaan jika ada
                 if (widget.onAddToCart != null) {
                   widget.onAddToCart!(widget.product.name);
+                }
+
+                // Tampilkan notifikasi berhasil ke user
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("$quantity ${widget.product.name} berhasil ditambahkan ke keranjang!"),
+                      backgroundColor: AppColors.primaryBlue,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
                 }
               }, 
               icon: const Icon(Icons.add_shopping_cart, color: AppColors.primaryBlue),
@@ -178,12 +250,33 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             
             const SizedBox(width: 10),
             
-            // Tombol Beli Sekarang
+            // Perbaikan Tombol Beli Sekarang: Menulis ke SharedPreferences lalu Navigasi Langsung
             Expanded(
               child: ElevatedButton(
-                onPressed: () {
-                  if (widget.onAddToCart != null) {
-                    widget.onAddToCart!(widget.product.name);
+                onPressed: () async {
+                  // 1. Tulis data ke SharedPreferences agar terbaca di CartPage
+                  final prefs = await SharedPreferences.getInstance();
+                  int existingQty = prefs.getInt('cart_qty_${widget.product.id}') ?? 0;
+                  await prefs.setInt('cart_qty_${widget.product.id}', existingQty + quantity);
+
+                  // 2. Sinkronisasi cadangan ke CartController objek
+                  for (int i = 0; i < quantity; i++) {
+                    CartController().addToCart(
+                      id: widget.product.id ?? widget.product.name.hashCode.toString(), 
+                      name: widget.product.name, 
+                      price: widget.product.price.toInt(), 
+                      image: widget.product.imagePath,
+                    );
+                  }
+
+                  // 3. Arahkan user menuju halaman keranjang
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CartPage(),
+                      ),
+                    );
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -191,7 +284,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text("Beli Sekarang", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                child: const Text(
+                  "Beli Sekarang", 
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                ),
               ),
             ),
           ],

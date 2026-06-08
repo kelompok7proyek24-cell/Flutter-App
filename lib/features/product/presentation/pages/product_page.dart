@@ -4,6 +4,8 @@ import 'product_detail_page.dart';
 
 // IMPORT DATA TERPUSAT: Menghubungkan Source of Truth dari modul seller
 import '../../../seller/data/models/product_model.dart';
+// Import controller keranjang global untuk aksi Quick Add
+import 'package:ikanku/features/cart/presentation/controllers/cart_controller.dart'; 
 
 class ProductPage extends StatefulWidget {
   final Function(String)? onAddToCart;
@@ -21,6 +23,7 @@ class ProductPage extends StatefulWidget {
 
 class _ProductPageState extends State<ProductPage> {
   late String _selectedCat;
+  String _searchQuery = ""; // Menyimpan kata kunci pencarian secara dinamis
 
   @override
   void initState() {
@@ -31,10 +34,12 @@ class _ProductPageState extends State<ProductPage> {
 
   @override
   Widget build(BuildContext context) {
-    // LOGIKA FILTER: Menyaring data dummyProducts berbasis ProductModel secara dinamis
-    final List<ProductModel> filteredProducts = _selectedCat == "Semua"
-        ? dummyProducts
-        : dummyProducts.where((p) => p.category == _selectedCat).toList();
+    // LOGIKA FILTER GANDA: Menyaring berdasarkan Kategori DAN Kata Kunci Pencarian
+    final List<ProductModel> filteredProducts = dummyProducts.where((product) {
+      final matchesCategory = _selectedCat == "Semua" || product.category == _selectedCat;
+      final matchesSearch = product.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    }).toList();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -50,13 +55,28 @@ class _ProductPageState extends State<ProductPage> {
       ),
       body: Column(
         children: [
-          // 1. Search Bar
+          // 1. Search Bar (Terintegrasi ke State)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value; // Update UI setiap kali user mengetik
+                });
+              },
               decoration: InputDecoration(
                 hintText: "Cari produk di IKANKU.ID..",
                 prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          setState(() {
+                            _searchQuery = "";
+                          });
+                        },
+                      )
+                    : null,
                 filled: true,
                 fillColor: Colors.grey[100],
                 border: OutlineInputBorder(
@@ -195,7 +215,10 @@ class _ProductPageState extends State<ProductPage> {
                                           "Jantan / Betina / Pasang",
                                           style: TextStyle(fontSize: 9, color: AppColors.primaryBlue, fontWeight: FontWeight.bold),
                                         ),
-                                      ),
+                                      )
+                                    else
+                                      const SizedBox(height: 13), // Spacer penyeimbang tinggi layout kartu agar seragam
+                                      
                                     const SizedBox(height: 8),
                                     // Baris Harga dan Aksi Keranjang Belanja
                                     Row(
@@ -211,9 +234,26 @@ class _ProductPageState extends State<ProductPage> {
                                         ),
                                         GestureDetector(
                                           onTap: () {
+                                            // INJEKSI DIREK: Memasukkan data langsung ke CartController
+                                            CartController().addToCart(
+                                              id: product.id ?? product.name.hashCode.toString(),
+                                              name: product.name,
+                                              price: product.price.toInt(),
+                                              image: product.imagePath,
+                                            );
+
                                             if (widget.onAddToCart != null) {
                                               widget.onAddToCart!(product.name);
                                             }
+
+                                            // Memberikan feedback instan ke pengguna
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text("${product.name} dimasukkan ke keranjang"),
+                                                backgroundColor: AppColors.primaryBlue,
+                                                duration: const Duration(seconds: 1),
+                                              ),
+                                            );
                                           },
                                           child: const CircleAvatar(
                                             radius: 14,

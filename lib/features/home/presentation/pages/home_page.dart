@@ -111,19 +111,29 @@ class _HomePageState extends State<HomePage> {
                       child: Text("IKANKU.ID", style: TextStyle(color: AppColors.primaryBlue, fontWeight: FontWeight.bold, fontSize: 18)),
                     ),
                   ),
-                  Stack(
-                    children: [
-                      const Icon(Icons.shopping_cart_outlined, color: AppColors.primaryBlue),
-                      if (_cartCount > 0)
-                        Positioned(
-                          right: 0,
-                          child: CircleAvatar(
-                            radius: 6, 
-                            backgroundColor: Colors.red, 
-                            child: Text("$_cartCount", style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold))
-                          ),
-                        )
-                    ],
+                  // =========================================================================
+                  // PERBAIKAN: Membungkus ikon keranjang agar langsung membuka halaman CartPage
+                  // =========================================================================
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _currentIndex = 3; // Pindah langsung ke tab indeks 3 (CartPage)
+                      });
+                    },
+                    child: Stack(
+                      children: [
+                        const Icon(Icons.shopping_cart_outlined, color: AppColors.primaryBlue),
+                        if (_cartCount > 0)
+                          Positioned(
+                            right: 0,
+                            child: CircleAvatar(
+                              radius: 6, 
+                              backgroundColor: Colors.red, 
+                              child: Text("$_cartCount", style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold))
+                            ),
+                          )
+                      ],
+                    ),
                   ),
                 ],
               ),
