@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/constants/colors.dart';
-import 'features/home/presentation/pages/home_page.dart';
+import 'features/auth/presentation/pages/login_page.dart';
 
 void main() {
   runApp(const IkankuApp());
@@ -78,7 +78,7 @@ class IkankuApp extends StatelessWidget {
         ),
       ),
 
-      home: HomePage(),
+      home: LoginPage(),
     );
   }
 }

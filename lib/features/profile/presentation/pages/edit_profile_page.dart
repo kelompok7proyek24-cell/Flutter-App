@@ -17,11 +17,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
   final _paymentController = TextEditingController(); // Controller untuk Metode Pembayaran
 
   String? _imagePath;
   bool _isLoading = true;
+  List<AddressModel> _currentAddresses = []; // Tempat penampungan sementara data alamat
 
   @override
   void initState() {
@@ -35,9 +35,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _nameController.text = user.name;
     _emailController.text = user.email;
     _phoneController.text = user.phone;
-    _addressController.text = user.address;
     _paymentController.text = user.paymentMethod; // Load data metode pembayaran
+    
+    if (!mounted) return;
     setState(() {
+      _currentAddresses = user.addresses; // Ambil & amankan data list alamat yang ada
       _imagePath = user.profileImagePath;
       _isLoading = false;
     });
@@ -57,13 +59,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   // Menyimpan seluruh data perubahan ke database lokal
   Future<void> _saveProfileChanges() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    // 1. Ambil data profil saat ini untuk mendapatkan password lama agar tidak hilang
+    final currentProfile = await ProfileService.getProfile();
+
+    // 2. Masukkan password dan list alamat lama tersebut ke dalam inisialisasi objek baru
     final updatedUser = UserModel(
       name: _nameController.text,
       email: _emailController.text,
+      password: currentProfile.password, // <-- OPER DATA PASSWORD LAMA DI SINI
       phone: _phoneController.text,
-      address: _addressController.text,
       profileImagePath: _imagePath,
       paymentMethod: _paymentController.text, // Simpan data metode pembayaran baru
+      addresses: _currentAddresses, // <-- OPER KEMBALI LIST ALAMAT AGAR TIDAK TERESET ATAU HILANG
     );
 
     await ProfileService.saveProfile(updatedUser);
@@ -82,7 +93,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _addressController.dispose();
     _paymentController.dispose(); // Bersihkan memori controller
     super.dispose();
   }
@@ -102,7 +112,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        title: const Text("Edit Profil"),
+        title: const Text("Edit Profil", style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -116,7 +126,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   CircleAvatar(
                     radius: 55,
                     backgroundColor: Colors.grey[200],
-                    backgroundImage: _imagePath != null
+                    backgroundImage: _imagePath != null && _imagePath!.isNotEmpty
                         ? FileImage(File(_imagePath!)) as ImageProvider
                         : const NetworkImage('https://i.pravatar.cc/300'),
                   ),
@@ -146,7 +156,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
             _buildField("Nama Lengkap", "Masukkan nama lengkap", _nameController),
             _buildField("Email", "Masukkan alamat email", _emailController),
             _buildField("Nomor Telepon", "Masukkan nomor telepon", _phoneController),
-            _buildField("Alamat Pengiriman", "Alamat lengkap pengiriman", _addressController),
             _buildField("Metode Pembayaran Utama", "Misal: Transfer Bank (VA), Visa ****4242", _paymentController),
 
             const SizedBox(height: 30),
@@ -187,6 +196,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             style: const TextStyle(
               color: Colors.grey,
               fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),

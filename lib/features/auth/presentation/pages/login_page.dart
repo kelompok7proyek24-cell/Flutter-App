@@ -17,10 +17,14 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
+  // =========================================================================
+  // LOGIKA UTAMA: AUTENTIKASI AKUN DEMO & VALIDASI STRICT PASSWORD
+  // =========================================================================
   Future<void> _handleLogin() async {
     final emailInput = _emailController.text.trim();
     final passwordInput = _passwordController.text;
 
+    // 1. Validasi Awal: Memastikan Input Tidak Kosong
     if (emailInput.isEmpty || passwordInput.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Email dan Kata Sandi wajib diisi")),
@@ -28,14 +32,35 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // Mengambil data profil yang terdaftar di database lokal
-    final savedUser = await ProfileService.getProfile();
+    // 2. Definisi Kredensial Akun Demo Bawaan (Pre-seeded Account)
+    const String defaultEmail = "admin@ikanku.com";
+    const String defaultPassword = "password123";
+    const String defaultName = "Demo User";
 
-    // Validasi sederhana mencocokkan input dengan data terdaftar
-    if (emailInput == savedUser.email) {
+    bool isAuthenticated = false;
+    String welcomeName = "";
+
+    // Skenario A: Memeriksa apakah menggunakan Akun Demo
+    if (emailInput == defaultEmail && passwordInput == defaultPassword) {
+      isAuthenticated = true;
+      welcomeName = defaultName;
+    } 
+    // Skenario B: Jika tidak, periksa data yang terdaftar di penyimpanan lokal
+    else {
+      final savedUser = await ProfileService.getProfile();
+      
+      // Validasi Ketat: Email DAN Kata Sandi harus sama dengan yang didaftarkan
+      if (emailInput == savedUser.email && passwordInput == savedUser.password) {
+        isAuthenticated = true;
+        welcomeName = savedUser.name;
+      }
+    }
+
+    // 3. Eksekusi Navigasi Berdasarkan Hasil Autentikasi
+    if (isAuthenticated) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Selamat Datang Kembali, ${savedUser.name}!")),
+          SnackBar(content: Text("Selamat Datang Kembali, $welcomeName!")),
         );
         
         // Bersihkan tumpukan navigasi dan arahkan langsung ke HomePage
@@ -46,9 +71,13 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     } else {
+      // Jika akun tidak cocok atau kata sandi salah
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Akun tidak ditemukan. Silakan daftar terlebih dahulu.")),
+          const SnackBar(
+            content: Text("Email atau Kata Sandi salah. Periksa kembali data Anda."),
+            backgroundColor: Colors.redAccent,
+          ),
         );
       }
     }
@@ -148,6 +177,30 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       onPressed: _handleLogin,
                       child: const Text("Masuk", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+
+                  // Info Box Akun Instan (Mempermudah pengujian dosen/user tanpa registrasi)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade100),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue.shade700),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            "Akun Instan Bawaan:\nEmail: admin@ikanku.com\nSandi: password123",
+                            style: TextStyle(fontSize: 12, color: Colors.black87, height: 1.4),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   

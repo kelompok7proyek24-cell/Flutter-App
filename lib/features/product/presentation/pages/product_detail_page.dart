@@ -25,6 +25,24 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   String selectedVariant = ""; 
   int quantity = 1; // Menyimpan jumlah pesanan lokal sebelum masuk ke keranjang
 
+  // =========================================================================
+  // FUNGSI VALIDASI: Memeriksa kelayakan transaksi berdasarkan pilihan varian
+  // =========================================================================
+  bool _isOrderValid(bool isFish) {
+    if (isFish && selectedVariant.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Silakan pilih Jenis Kelamin terlebih dahulu!"),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Memeriksa tipe produk berdasarkan kategorinya
@@ -128,7 +146,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           child: ChoiceChip(
                             label: Text(variant),
                             selected: isSelected,
-                            onSelected: (val) => setState(() => selectedVariant = variant),
+                            onSelected: (val) => setState(() => selectedVariant = val ? variant : ""),
                             selectedColor: AppColors.primaryBlue,
                             labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
                           ),
@@ -214,6 +232,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             // Perbaikan Tombol Tambah ke Keranjang Terintegrasi Global State & Local Storage
             IconButton(
               onPressed: () async {
+                // EKSEKUSI VALIDASI: Berhenti jika syarat tidak terpenuhi
+                if (!_isOrderValid(isFish)) return;
+
                 // Simpan data quantity ke SharedPreferences disk agar CartPage sinkron
                 final prefs = await SharedPreferences.getInstance();
                 int existingQty = prefs.getInt('cart_qty_${widget.product.id}') ?? 0;
@@ -238,7 +259,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text("$quantity ${widget.product.name} berhasil ditambahkan ke keranjang!"),
+                      content: Text("$quantity ${widget.product.name} ($selectedVariant) berhasil ditambahkan ke keranjang!"),
                       backgroundColor: AppColors.primaryBlue,
                       duration: const Duration(seconds: 2),
                     ),
@@ -254,6 +275,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             Expanded(
               child: ElevatedButton(
                 onPressed: () async {
+                  // EKSEKUSI VALIDASI: Berhenti jika syarat tidak terpenuhi
+                  if (!_isOrderValid(isFish)) return;
+
                   // 1. Tulis data ke SharedPreferences agar terbaca di CartPage
                   final prefs = await SharedPreferences.getInstance();
                   int existingQty = prefs.getInt('cart_qty_${widget.product.id}') ?? 0;

@@ -1,3 +1,4 @@
+// profile_page.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'settings_page.dart';
@@ -5,10 +6,10 @@ import '../widgets/profile_menu_item.dart';
 import '../widgets/order_status_card.dart';
 import 'my_orders_page.dart'; 
 import 'edit_profile_page.dart'; 
+import 'saved_addresses_page.dart'; // <-- PERUBAHAN: Import halaman alamat yang baru
 import 'package:ikanku/features/chat/presentation/pages/message_list_page.dart';
 import 'package:ikanku/features/profile/data/models/user_model.dart';
 import 'package:ikanku/features/profile/data/datasources/profile_service.dart';
-// Import halaman login untuk mengarahkan user saat logout
 import 'package:ikanku/features/auth/presentation/pages/login_page.dart'; 
 
 class ProfilePage extends StatefulWidget {
@@ -28,9 +29,9 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadProfileData();
   }
 
-  // Mengambil data dari database lokal SharedPreferences
   Future<void> _loadProfileData() async {
     final data = await ProfileService.getProfile();
+    if (!mounted) return;
     setState(() {
       _user = data;
       _isLoading = false;
@@ -44,6 +45,21 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (context) => MyOrdersPage(initialTab: index),
       ),
     );
+  }
+
+  // LOGIKA BARU: Mengambil teks alamat yang ditandai sebagai UTAMA
+  String _getMainAddressSubtitle() {
+    if (_user == null || _user!.addresses.isEmpty) {
+      return "Alamat belum diatur";
+    }
+    
+    // Mencari alamat yang di-set sebagai utama (isMain = true)
+    final mainAddress = _user!.addresses.firstWhere(
+      (element) => element.isMain,
+      orElse: () => _user!.addresses.first, // Jika tidak ada, ambil indeks pertama
+    );
+
+    return "${mainAddress.label}: ${mainAddress.detailAddress}";
   }
 
   @override
@@ -89,7 +105,7 @@ class _ProfilePageState extends State<ProfilePage> {
             CircleAvatar(
               radius: 45,
               backgroundColor: Colors.grey[300],
-              backgroundImage: _user?.profileImagePath != null
+              backgroundImage: _user?.profileImagePath != null && _user!.profileImagePath!.isNotEmpty
                   ? FileImage(File(_user!.profileImagePath!)) as ImageProvider
                   : const NetworkImage('https://i.pravatar.cc/300'),
             ),
@@ -107,7 +123,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 20),
 
-            // --- KARTU PESANAN (TIDAK BERUBAH) ---
+            // --- KARTU PESANAN ---
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -165,18 +181,19 @@ class _ProfilePageState extends State<ProfilePage> {
               onTap: () {},
             ),
             
+            // PERBAIKAN UTAMA: Menu Alamat Pengiriman Dinamis
             ProfileMenuItem(
               icon: Icons.location_on_outlined,
               title: "Alamat Pengiriman",
-              subtitle: (_user?.address != null && _user!.address.isNotEmpty)
-                  ? _user!.address
-                  : "Alamat belum diatur",
+              subtitle: _getMainAddressSubtitle(), // Menggunakan fungsi pencari alamat utama
               onTap: () async {
+                // Berpindah ke halaman manajemen daftar alamat baru
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                  MaterialPageRoute(builder: (context) => const SavedAddressesPage()),
                 );
-                if (result == true) {
+                // Sinkronisasi data ketika kembali ke halaman utama profil
+                if (result == true || result == null) {
                   _loadProfileData(); 
                 }
               },
@@ -240,7 +257,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: () {
-                  // Menampilkan dialog konfirmasi sebelum keluar
                   showDialog(
                     context: context,
                     builder: (BuildContext context) {
@@ -253,11 +269,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             onPressed: () => Navigator.pop(context),
                           ),
                           TextButton(
-                            child: const Text("Keluar", style: TextStyle(color: Colors.red)),
+                            child: const Text("Keluar"),
+                            style: TextButton.styleFrom(foregroundColor: Colors.red),
                             onPressed: () {
-                              Navigator.pop(context); // Tutup dialog
-                              
-                              // Bersihkan seluruh tumpukan halaman dan arahkan ke LoginPage
+                              Navigator.pop(context);
                               Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(builder: (context) => const LoginPage()),

@@ -1,3 +1,5 @@
+// register_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:ikanku/features/profile/data/models/user_model.dart';
 import 'package:ikanku/features/profile/data/datasources/profile_service.dart';
@@ -26,10 +28,11 @@ class _RegisterPageState extends State<RegisterPage> {
       final newUser = UserModel(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
+        password: _passwordController.text, 
         phone: "", // Kosongkan awal, nanti diisi di Edit Profile
-        address: "", // Kosongkan awal, nanti diisi di Edit Profile
         profileImagePath: null,
         paymentMethod: "", // Kosongkan awal, nanti diisi di Edit Profile
+        addresses: [], // FIXED: Mengganti address string menjadi array kosong []
       );
 
       // Tulis data ke penyimpanan lokal (SharedPreferences)

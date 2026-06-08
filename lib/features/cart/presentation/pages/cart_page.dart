@@ -13,7 +13,7 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-  // Map untuk menyimpan ID produk dan jumlah kuantitas yang dibeli
+  // Map untuk menyimpan Unique ID (gabungan id_#_varian) dan jumlah kuantitas
   Map<String, int> _cartItems = {};
   bool _isLoading = true;
 
@@ -23,22 +23,25 @@ class _CartPageState extends State<CartPage> {
     _loadCartData();
   }
 
-  // MEMBACA DATA DARI PENYIMPANAN LOKAL
+  // MEMBACA DATA DARI PENYIMPANAN LOKAL BERBASIS MULTI-VARIAN
   Future<void> _loadCartData() async {
     final prefs = await SharedPreferences.getInstance();
     Map<String, int> tempCart = {};
 
-    // Ambil data quantity untuk masing-masing produk berdasarkan id
-    for (var product in dummyProducts) {
-      int quantity = prefs.getInt('cart_qty_${product.id}') ?? 0;
-      if (quantity > 0) {
-        tempCart[product.id] = quantity;
+    // Ambil semua kunci yang tersimpan di SharedPreferences
+    final keys = prefs.getKeys();
+
+    for (String key in keys) {
+      // Filter hanya kunci milik fitur keranjang belanja
+      if (key.startsWith('cart_qty_')) {
+        int quantity = prefs.getInt(key) ?? 0;
+        if (quantity > 0) {
+          // Ekstrak bagian identitas setelah teks prefix 'cart_qty_'
+          String cartItemId = key.replaceFirst('cart_qty_', '');
+          tempCart[cartItemId] = quantity;
+        }
       }
     }
-
-    // =========================================================================
-    // PERBAIKAN: Blok Fallback Initial dihapus agar keranjang bisa kosong murni
-    // =========================================================================
 
     setState(() {
       _cartItems = tempCart;
@@ -46,18 +49,18 @@ class _CartPageState extends State<CartPage> {
     });
   }
 
-  // FUNGSI AKSI: Tambah (+1) atau Kurang (-1) kuantitas item
-  Future<void> _updateQuantity(String productId, int delta) async {
+  // FUNGSI AKSI: Tambah (+1) atau Kurang (-1) kuantitas item berdasarkan Unique ID
+  Future<void> _updateQuantity(String cartItemId, int delta) async {
     final prefs = await SharedPreferences.getInstance();
-    int currentQty = _cartItems[productId] ?? 0;
+    int currentQty = _cartItems[cartItemId] ?? 0;
     int updatedQty = currentQty + delta;
 
     if (updatedQty <= 0) {
-      _cartItems.remove(productId);
-      await prefs.remove('cart_qty_$productId');
+      _cartItems.remove(cartItemId);
+      await prefs.remove('cart_qty_$cartItemId');
     } else {
-      _cartItems[productId] = updatedQty;
-      await prefs.setInt('cart_qty_$productId', updatedQty);
+      _cartItems[cartItemId] = updatedQty;
+      await prefs.setInt('cart_qty_$cartItemId', updatedQty);
     }
 
     _syncGlobalCartCount(_cartItems);
@@ -71,10 +74,14 @@ class _CartPageState extends State<CartPage> {
     await prefs.setInt('cart_count', totalItems);
   }
 
-  // HITUNG OTOMATIS: Kalkulasi jumlah harga berdasarkan state kuantitas terbaru
+  // HITUNG OTOMATIS: Kalkulasi jumlah harga berdasarkan data master produk asli
   double _calculateTotalPrice() {
     double total = 0;
-    _cartItems.forEach((productId, quantity) {
+    _cartItems.forEach((cartItemId, quantity) {
+      // Memisahkan ID asli dari key gabungan
+      List<String> parts = cartItemId.split('_#_');
+      String productId = parts[0];
+      
       final product = dummyProducts.firstWhere((prod) => prod.id == productId);
       total += product.price * quantity;
     });
@@ -114,16 +121,21 @@ class _CartPageState extends State<CartPage> {
           ? _buildEmptyState()
           : Column(
               children: [
-                // LIST ITEM BELANJAAN (RESPONSIF)
+                // LIST ITEM BELANJAAN (RESPONSIF MULTI-VARIAN)
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: _cartItems.length,
                     itemBuilder: (context, index) {
-                      String productId = _cartItems.keys.elementAt(index);
-                      int quantity = _cartItems[productId]!;
+                      String cartItemId = _cartItems.keys.elementAt(index); // Contoh format: "P001_#_Jantan"
+                      int quantity = _cartItems[cartItemId]!;
                       
-                      // Mengikat komponen UI dengan kebenaran data model terpusat
+                      // Memecah kembali ID produk asli dan informasi variannya
+                      List<String> parts = cartItemId.split('_#_');
+                      String productId = parts[0];
+                      String variantName = parts.length > 1 ? parts[1] : "Normal";
+
+                      // Mengikat komponen UI dengan data master produk berdasarkan ID asli
                       final product = dummyProducts.firstWhere((prod) => prod.id == productId);
 
                       return Container(
@@ -157,13 +169,13 @@ class _CartPageState extends State<CartPage> {
                               ),
                               const SizedBox(width: 12),
 
-                              // INFORMASI NAMA DAN HARGA
+                              // INFORMASI NAMA (DENGAN VARIAN) DAN HARGA
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      product.name,
+                                      variantName == "Normal" ? product.name : "${product.name} ($variantName)",
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
@@ -177,14 +189,14 @@ class _CartPageState extends State<CartPage> {
                                 ),
                               ),
 
-                              // PENGATUR JUMLAH BARANG (SISTEM COUNTER)
+                              // PENGATUR JUMLAH BARANG (SISTEM COUNTER BERBASIS ITEM ID)
                               Row(
                                 children: [
                                   IconButton(
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                     icon: const Icon(Icons.remove_circle_outline, color: Colors.grey, size: 22),
-                                    onPressed: () => _updateQuantity(productId, -1),
+                                    onPressed: () => _updateQuantity(cartItemId, -1),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -197,7 +209,7 @@ class _CartPageState extends State<CartPage> {
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                     icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryBlue, size: 22),
-                                    onPressed: () => _updateQuantity(productId, 1),
+                                    onPressed: () => _updateQuantity(cartItemId, 1),
                                   ),
                                 ],
                               )
@@ -215,7 +227,7 @@ class _CartPageState extends State<CartPage> {
                     left: 20,
                     right: 20,
                     top: 16,
-                    bottom: isLandscape ? 16 : 24, // Proteksi layout viewport landscape
+                    bottom: isLandscape ? 16 : 24,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -250,11 +262,17 @@ class _CartPageState extends State<CartPage> {
                           onPressed: () {
                             List<Map<String, dynamic>> orderItems = [];
                             
-                            _cartItems.forEach((productId, quantity) {
+                            _cartItems.forEach((cartItemId, quantity) {
+                              List<String> parts = cartItemId.split('_#_');
+                              String productId = parts[0];
+                              String variantName = parts.length > 1 ? parts[1] : "Normal";
+
                               final product = dummyProducts.firstWhere((prod) => prod.id == productId);
+                              
                               orderItems.add({
-                                'product': product,   // Objek ProductModel utuh dari modul seller
-                                'quantity': quantity, // Kuantitas belanja saat ini
+                                'product': product,
+                                'quantity': quantity,
+                                'variant': variantName, // Data varian diturunkan agar siap dibaca CheckoutPage
                               });
                             });
 
@@ -268,7 +286,7 @@ class _CartPageState extends State<CartPage> {
                               return;
                             }
 
-                            // Berpindah ke Halaman Checkout dengan membawa muatan data item & total harga
+                            // Berpindah ke Halaman Checkout membawa payload data terstruktur terbaru
                             Navigator.push(
                               context,
                               MaterialPageRoute(
