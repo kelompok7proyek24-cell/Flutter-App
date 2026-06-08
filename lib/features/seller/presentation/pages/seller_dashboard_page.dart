@@ -2,10 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'seller_setting_page.dart';
+import 'seller_edit_profile_page.dart'; // Ditambahkan untuk kebutuhan tab alternatif
 import 'package:ikanku/features/seller/data/models/product_model.dart';
 import 'package:ikanku/features/seller/widgets/inventory_item_tile.dart';
 import 'package:ikanku/features/seller/widgets/revenue_card.dart';
-// INTEGRASI DATA: Load data riil user seller
 import 'package:ikanku/features/profile/data/models/user_model.dart';
 import 'package:ikanku/features/profile/data/datasources/profile_service.dart';
 
@@ -18,11 +18,11 @@ class SellerDashboardPage extends StatefulWidget {
 
 class _SellerDashboardPageState extends State<SellerDashboardPage> {
   late Future<UserModel> _sellerDataFuture;
+  int _currentIndex = 0; // State untuk melacak tab aktif
 
   @override
   void initState() {
     super.initState();
-    // Inisialisasi pembacaan data local sejak init state
     _sellerDataFuture = ProfileService.getProfile();
   }
 
@@ -46,71 +46,122 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
 
         final seller = snapshot.data!;
 
+        // Mengatur daftar tampilan body berdasarkan index footer
+        final List<Widget> _pages = [
+          _buildMainDashboardBody(seller),
+          _buildProductManagementBody(),
+          const SellerSettingPage(), // Mengintegrasikan langsung halaman setting sebagai Tab Akun
+        ];
+
         return Scaffold(
           backgroundColor: const Color(0xffF7F9FC),
-          appBar: AppBar(
-            elevation: 0,
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: const Text(
-              "Akun Seller",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            actions: [
-              IconButton(icon: const Icon(Icons.notifications_none_outlined), onPressed: () {}),
-              IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SellerSettingPage()),
-                  );
-                },
+          appBar: _currentIndex == 0 
+              ? AppBar(
+                  elevation: 0,
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  title: const Text(
+                    "Akun Seller",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  actions: [
+                    IconButton(icon: const Icon(Icons.notifications_none_outlined), onPressed: () {}),
+                    IconButton(
+                      icon: const Icon(Icons.settings_outlined),
+                      onPressed: () {
+                        setState(() {
+                          _currentIndex = 2; // Pindah langsung ke Tab Pengaturan/Akun
+                        });
+                      },
+                    ),
+                  ],
+                )
+              : null, // Biar AppBar halaman setting/produk tidak bertabrakan
+          body: SafeArea(
+            child: _pages[_currentIndex],
+          ),
+          // IMPLEMENTASI FOOTER NAVIGASI SELLER BARU
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: Colors.blue,
+            unselectedItemColor: Colors.grey,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home),
+                label: 'Beranda',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.layers_outlined),
+                activeIcon: Icon(Icons.layers),
+                label: 'Produk',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Akun',
               ),
             ],
-          ),
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Kirim data object seller ke widget Profile Card
-                  _buildProfileCard(seller),
-                  const SizedBox(height: 20),
-                  _buildFinancialSection(),
-                  const SizedBox(height: 20),
-                  _buildPerformanceChart(),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Inventory (42 items)",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text("View All", style: TextStyle(color: Colors.blue)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  _buildInventoryList(),
-                ],
-              ),
-            ),
           ),
         );
       },
     );
   }
 
-  // WIDGET: Profil Toko Dinamis
+  // Memisahkan komponen utama dashboard ke widget tersendiri
+  Widget _buildMainDashboardBody(UserModel seller) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProfileCard(seller),
+          const SizedBox(height: 20),
+          _buildFinancialSection(),
+          const SizedBox(height: 20),
+          _buildPerformanceChart(),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Inventory (42 items)",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _currentIndex = 1; // Pindah ke tab manajemen produk
+                  });
+                },
+                child: const Text("View All", style: TextStyle(color: Colors.blue)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildInventoryList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductManagementBody() {
+    return const Center(
+      child: Text("Halaman Manajemen Produk Seller", style: TextStyle(fontWeight: FontWeight.bold)),
+    );
+  }
+
+  // WIDGET PEMBANTU UI TETAP (Sama seperti kode Anda)
   Widget _buildProfileCard(UserModel seller) {
     return Row(
       children: [
@@ -127,7 +178,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
               child: CircleAvatar(
                 radius: 10,
                 backgroundColor: Colors.blue,
-                child: const Icon(Icons.edit, size: 10, color: Colors.white),
+                child: Icon(Icons.edit, size: 10, color: Colors.white),
               ),
             ),
           ],
@@ -137,12 +188,10 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // NAMA TOKO DIAMBIL DARI MODEL DATA
               Text(
                 seller.shopName ?? "Nama Toko Belum Diatur",
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
-              // ALAMAT LOKASI TOKO DIAMBIL DARI MODEL DATA
               Text(
                 seller.shopAddress ?? "Lokasi Belum Diatur",
                 style: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -171,7 +220,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const SellerSettingPage()),
+              MaterialPageRoute(builder: (context) => const SellerEditProfilePage()),
             );
           },
           style: ElevatedButton.styleFrom(

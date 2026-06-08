@@ -2,7 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'edit_profile_page.dart';
-import 'package:ikanku/features/seller/presentation/pages/seller_registration_page.dart';
+// Mengalihkan import ke gateway page agar pengecekan status toko berjalan otomatis
+import 'package:ikanku/features/seller/presentation/pages/seller_gateway_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -15,20 +16,20 @@ class SettingsPage extends StatelessWidget {
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.black,
-        title: const Text("Pengaturan"),
+        title: const Text("Pengaturan", style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
           children: [
-            // KONEKSI KE SELLER CENTER
+            // KONEKSI KE SELLER CENTER VIA GATEWAY
             _settingItem(
               Icons.storefront, 
               "Seller Center", 
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SellerRegistrationPage()),
+                  MaterialPageRoute(builder: (context) => const SellerGatewayPage()),
                 );
               },
             ),
@@ -63,10 +64,9 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  // Menambahkan parameter VoidCallback onTap agar bisa diklik
   Widget _settingItem(IconData icon, String title, {VoidCallback? onTap}) {
     return GestureDetector(
-      onTap: onTap, // Menjalankan fungsi navigasi saat ditekan
+      onTap: onTap, 
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.symmetric(

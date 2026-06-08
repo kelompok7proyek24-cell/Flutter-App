@@ -8,18 +8,20 @@ class SellerSettingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Memeriksa apakah halaman dipanggil sebagai halaman mandiri (push) atau di dalam Tab
+    final modalRoute = ModalRoute.of(context);
+    final isPageNested = modalRoute?.canPop ?? false;
+
     return Scaffold(
       backgroundColor: const Color(0xffF7F9FC),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        // Sembunyikan tombol back jika dirender di dalam BottomNavigationBar utama
+        automaticallyImplyLeading: isPageNested,
         title: const Text(
-          "Pengaturan",
+          "Pengaturan Toko",
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
       ),
@@ -28,23 +30,22 @@ class SellerSettingPage extends StatelessWidget {
         children: [
           _buildSettingTile(
             icon: Icons.storefront_outlined,
-            title: "Management Produk",
+            title: "Manajemen Produk",
             onTap: () {
-              // TODO: Navigasi ke list produk seller
+              // Action manajemen produk
             },
           ),
           _buildSettingTile(
             icon: Icons.notifications_none_outlined,
             title: "Notifikasi Pesanan Masuk",
             onTap: () {
-              // TODO: Navigasi ke pengaturan notifikasi
+              // Action notifikasi
             },
           ),
           _buildSettingTile(
             icon: Icons.person_outline,
-            title: "Edit Akun",
+            title: "Edit Profil Akun Seller",
             onTap: () {
-              // Navigasi ke Halaman Edit Profil Penjual
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -57,7 +58,7 @@ class SellerSettingPage extends StatelessWidget {
             icon: Icons.dark_mode_outlined,
             title: "Tampilan",
             onTap: () {
-              // TODO: Logika ganti tema/tampilan
+              // Logika Tema
             },
           ),
         ],
