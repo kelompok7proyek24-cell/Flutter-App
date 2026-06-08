@@ -1,4 +1,5 @@
 // profile_page.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'settings_page.dart';
@@ -6,7 +7,8 @@ import '../widgets/profile_menu_item.dart';
 import '../widgets/order_status_card.dart';
 import 'my_orders_page.dart'; 
 import 'edit_profile_page.dart'; 
-import 'saved_addresses_page.dart'; // <-- PERUBAHAN: Import halaman alamat yang baru
+import 'saved_addresses_page.dart'; 
+import 'payment_method_page.dart'; // <-- MEMASTIKAN IMPORT HALAMAN BARU INI ADA
 import 'package:ikanku/features/chat/presentation/pages/message_list_page.dart';
 import 'package:ikanku/features/profile/data/models/user_model.dart';
 import 'package:ikanku/features/profile/data/datasources/profile_service.dart';
@@ -47,16 +49,14 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // LOGIKA BARU: Mengambil teks alamat yang ditandai sebagai UTAMA
   String _getMainAddressSubtitle() {
     if (_user == null || _user!.addresses.isEmpty) {
       return "Alamat belum diatur";
     }
     
-    // Mencari alamat yang di-set sebagai utama (isMain = true)
     final mainAddress = _user!.addresses.firstWhere(
       (element) => element.isMain,
-      orElse: () => _user!.addresses.first, // Jika tidak ada, ambil indeks pertama
+      orElse: () => _user!.addresses.first,
     );
 
     return "${mainAddress.label}: ${mainAddress.detailAddress}";
@@ -181,18 +181,15 @@ class _ProfilePageState extends State<ProfilePage> {
               onTap: () {},
             ),
             
-            // PERBAIKAN UTAMA: Menu Alamat Pengiriman Dinamis
             ProfileMenuItem(
               icon: Icons.location_on_outlined,
               title: "Alamat Pengiriman",
-              subtitle: _getMainAddressSubtitle(), // Menggunakan fungsi pencari alamat utama
+              subtitle: _getMainAddressSubtitle(), 
               onTap: () async {
-                // Berpindah ke halaman manajemen daftar alamat baru
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const SavedAddressesPage()),
                 );
-                // Sinkronisasi data ketika kembali ke halaman utama profil
                 if (result == true || result == null) {
                   _loadProfileData(); 
                 }
@@ -206,9 +203,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? _user!.paymentMethod
                   : "Belum diatur",
               onTap: () async {
+                // SINKRONISASI BARU: Sekarang mengarah ke Halaman Khusus Manajemen Pembayaran Buyer
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                  MaterialPageRoute(builder: (context) => const PaymentMethodPage()),
                 );
                 if (result == true) {
                   _loadProfileData();
@@ -269,8 +267,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             onPressed: () => Navigator.pop(context),
                           ),
                           TextButton(
-                            child: const Text("Keluar"),
                             style: TextButton.styleFrom(foregroundColor: Colors.red),
+                            child: const Text("Keluar"),
                             onPressed: () {
                               Navigator.pop(context);
                               Navigator.pushAndRemoveUntil(

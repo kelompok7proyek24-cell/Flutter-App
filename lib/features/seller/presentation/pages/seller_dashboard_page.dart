@@ -1,10 +1,13 @@
 // Path: lib/features/seller/presentation/pages/seller_dashboard_page.dart
 
 import 'package:flutter/material.dart';
-import 'seller_setting_page.dart'; // Import halaman setting agar terkoneksi
+import 'seller_setting_page.dart';
 import 'package:ikanku/features/seller/data/models/product_model.dart';
 import 'package:ikanku/features/seller/widgets/inventory_item_tile.dart';
 import 'package:ikanku/features/seller/widgets/revenue_card.dart';
+// INTEGRASI DATA: Load data riil user seller
+import 'package:ikanku/features/profile/data/models/user_model.dart';
+import 'package:ikanku/features/profile/data/datasources/profile_service.dart';
 
 class SellerDashboardPage extends StatefulWidget {
   const SellerDashboardPage({super.key});
@@ -14,95 +17,101 @@ class SellerDashboardPage extends StatefulWidget {
 }
 
 class _SellerDashboardPageState extends State<SellerDashboardPage> {
+  late Future<UserModel> _sellerDataFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi pembacaan data local sejak init state
+    _sellerDataFuture = ProfileService.getProfile();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xffF7F9FC),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // Kembali ke halaman profil utama pembeli
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text(
-          "Akun Seller",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_outlined),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {
-              // PERBAIKAN: Navigasi langsung terhubung ke Halaman Setting Seller
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SellerSettingPage(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // =========================================
-              // PROFIL TOKO CARD
-              // =========================================
-              _buildProfileCard(),
-              const SizedBox(height: 20),
+    return FutureBuilder<UserModel>(
+      future: _sellerDataFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-              // =========================================
-              // METRIK FINANSIAL (REVENUE, ORDERS, PRODUCTS)
-              // =========================================
-              _buildFinancialSection(),
-              const SizedBox(height: 20),
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: Text("Gagal memuat profil toko")),
+          );
+        }
 
-              // =========================================
-              // GRAFIK PERFORMA TOKO (PLACEHOLDER)
-              // =========================================
-              _buildPerformanceChart(),
-              const SizedBox(height: 24),
+        final seller = snapshot.data!;
 
-              // =========================================
-              // DAFTAR INVENTARIS (INVENTORY)
-              // =========================================
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Inventory (42 items)",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text("View All", style: TextStyle(color: Colors.blue)),
-                  ),
-                ],
+        return Scaffold(
+          backgroundColor: const Color(0xffF7F9FC),
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: const Text(
+              "Akun Seller",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            actions: [
+              IconButton(icon: const Icon(Icons.notifications_none_outlined), onPressed: () {}),
+              IconButton(
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SellerSettingPage()),
+                  );
+                },
               ),
-              const SizedBox(height: 8),
-              _buildInventoryList(),
             ],
           ),
-        ),
-      ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Kirim data object seller ke widget Profile Card
+                  _buildProfileCard(seller),
+                  const SizedBox(height: 20),
+                  _buildFinancialSection(),
+                  const SizedBox(height: 20),
+                  _buildPerformanceChart(),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Inventory (42 items)",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        child: const Text("View All", style: TextStyle(color: Colors.blue)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _buildInventoryList(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  // WIDGET: Profil Toko
-  Widget _buildProfileCard() {
+  // WIDGET: Profil Toko Dinamis
+  Widget _buildProfileCard(UserModel seller) {
     return Row(
       children: [
         Stack(
@@ -112,7 +121,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
               backgroundColor: Colors.blue.shade900,
               child: const Icon(Icons.store, color: Colors.white, size: 30),
             ),
-            Positioned(
+            const Positioned(
               bottom: 0,
               right: 0,
               child: CircleAvatar(
@@ -128,13 +137,17 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "AquaGrace",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              // NAMA TOKO DIAMBIL DARI MODEL DATA
+              Text(
+                seller.shopName ?? "Nama Toko Belum Diatur",
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
-              const Text(
-                "Premium Exotic Fish Store",
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+              // ALAMAT LOKASI TOKO DIAMBIL DARI MODEL DATA
+              Text(
+                seller.shopAddress ?? "Lokasi Belum Diatur",
+                style: const TextStyle(color: Colors.grey, fontSize: 13),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Row(
@@ -146,7 +159,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey.shade700),
                   ),
                   Text(
-                    " • Est. 2018",
+                    " • Baru",
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
                   ),
                 ],
@@ -156,12 +169,9 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
         ),
         ElevatedButton(
           onPressed: () {
-            // PERBAIKAN: Tombol edit dialihkan juga ke Halaman Setting Seller
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const SellerSettingPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const SellerSettingPage()),
             );
           },
           style: ElevatedButton.styleFrom(
@@ -177,7 +187,6 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
-  // WIDGET: Finansial & Summary Grid
   Widget _buildFinancialSection() {
     return Column(
       children: [
@@ -197,24 +206,21 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Rp 154.200.500", 
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
+                  const Text("Rp 0", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                   Icon(Icons.account_balance_wallet_outlined, color: Colors.grey.shade300, size: 30),
                 ],
               ),
               const SizedBox(height: 4),
-              const Text("+8.5% dari bulan lalu", style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w500)),
+              const Text("Toko Baru Aktif", style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildMiniSummaryCard("ORDERS", "1,284", "+12% growth", Colors.green)),
+            Expanded(child: _buildMiniSummaryCard("ORDERS", "0", "0% growth", Colors.grey)),
             const SizedBox(width: 12),
-            Expanded(child: _buildMiniSummaryCard("PRODUCTS", "42", "3 new this week", Colors.blue)),
+            Expanded(child: _buildMiniSummaryCard("PRODUCTS", "0", "Belum ada produk", Colors.blue)),
           ],
         )
       ],
@@ -242,7 +248,6 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
-  // WIDGET: Performance Chart
   Widget _buildPerformanceChart() {
     return Container(
       width: double.infinity,
@@ -256,7 +261,6 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            // PERBAIKAN UTAMA: Menggunakan spaceBetween, bukan between
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("Store Performance", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
@@ -267,119 +271,21 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
           Container(
             height: 100,
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _buildBarPlaceholder(40),
-                _buildBarPlaceholder(30),
-                _buildBarPlaceholder(50),
-                _buildBarPlaceholder(45),
-                _buildBarPlaceholder(35),
-                _buildBarPlaceholder(20),
-                _buildBarPlaceholder(80, isToday: true),
-              ],
+            child: const Center(
+              child: Text("Belum ada data performa minggu ini", style: TextStyle(color: Colors.grey, fontSize: 12)),
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Mon", style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
-              Text("Today", style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.bold)),
-            ],
-          )
         ],
       ),
     );
   }
 
-  Widget _buildBarPlaceholder(double heightPercentage, {bool isToday = false}) {
-    return Container(
-      width: 24,
-      height: heightPercentage,
-      decoration: BoxDecoration(
-        color: isToday ? Colors.blue : Colors.grey.shade100,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(4),
-          topRight: Radius.circular(4),
-        ),
-      ),
-    );
-  }
-
-  // WIDGET: List Item Inventaris
   Widget _buildInventoryList() {
-    final List<Map<String, dynamic>> items = [
-      {"name": "Electric Blue Neon Tetra", "price": "Rp 4.500", "stock": "120 in stock", "status": "normal"},
-      {"name": "Fancy Koi Angelfish", "price": "Rp 28.000", "stock": "15 in stock", "status": "warning"},
-      {"name": "Red Dragon Betta", "price": "Rp 45.000", "stock": "Low: 2 units", "status": "danger"},
-    ];
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.shade100),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.set_meal, color: Colors.blue),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item["name"], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(item["price"], style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: item["status"] == "danger" ? Colors.red.shade50 : (item["status"] == "warning" ? Colors.orange.shade50 : Colors.green.shade50),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            item["stock"],
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: item["status"] == "danger" ? Colors.red : (item["status"] == "warning" ? Colors.orange : Colors.green),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.grey),
-                onPressed: () {},
-              ),
-            ],
-          ),
-        );
-      },
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Text("Belum ada inventaris ikan hias", style: TextStyle(color: Colors.grey)),
+      ),
     );
   }
 }

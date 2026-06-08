@@ -57,7 +57,13 @@ class UserModel {
   final String phone;
   final String? profileImagePath; // Diperbolehkan null jika belum upload foto
   final String paymentMethod;
-  final List<AddressModel> addresses; // <-- INI DIA YANG MEMBUAT ERROR JIKA HILANG
+  final List<AddressModel> addresses;
+
+  // --- TAMBAHAN PROPERTI FITUR SELLER ---
+  final bool isSeller;
+  final String? shopName;
+  final String? shopCity;
+  final String? shopAddress;
 
   UserModel({
     required this.name,
@@ -67,6 +73,10 @@ class UserModel {
     this.profileImagePath,
     required this.paymentMethod,
     required this.addresses,
+    this.isSeller = false, // Default awal akun baru adalah false
+    this.shopName,
+    this.shopCity,
+    this.shopAddress,
   });
 
   // Pembaruan Method Serialisasi menggunakan nama toJson()
@@ -78,6 +88,11 @@ class UserModel {
         'profileImagePath': profileImagePath,
         'paymentMethod': paymentMethod,
         'addresses': addresses.map((e) => e.toJson()).toList(),
+        // Mapping Field Baru
+        'isSeller': isSeller,
+        'shopName': shopName,
+        'shopCity': shopCity,
+        'shopAddress': shopAddress,
       };
 
   // Pembaruan Method Deserialisasi menggunakan nama fromJson()
@@ -91,6 +106,40 @@ class UserModel {
       profileImagePath: json['profileImagePath'],
       paymentMethod: json['paymentMethod'] ?? '',
       addresses: addressList.map((e) => AddressModel.fromJson(e)).toList(),
+      // Deserialisasi Field Baru dengan Fallback Value yang aman
+      isSeller: json['isSeller'] ?? false,
+      shopName: json['shopName'],
+      shopCity: json['shopCity'],
+      shopAddress: json['shopAddress'],
+    );
+  }
+
+  // Method duplikasi objek untuk mempermudah mutasi data secara parsial
+  UserModel copyWith({
+    String? name,
+    String? email,
+    String? password,
+    String? phone,
+    String? profileImagePath,
+    String? paymentMethod,
+    List<AddressModel>? addresses,
+    bool? isSeller,
+    String? shopName,
+    String? shopCity,
+    String? shopAddress,
+  }) {
+    return UserModel(
+      name: name ?? this.name,
+      email: email ?? this.email,
+      password: password ?? this.password,
+      phone: phone ?? this.phone,
+      profileImagePath: profileImagePath ?? this.profileImagePath,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      addresses: addresses ?? this.addresses,
+      isSeller: isSeller ?? this.isSeller,
+      shopName: shopName ?? this.shopName,
+      shopCity: shopCity ?? this.shopCity,
+      shopAddress: shopAddress ?? this.shopAddress,
     );
   }
 }
