@@ -2,12 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'seller_setting_page.dart';
-import 'seller_edit_profile_page.dart'; // Ditambahkan untuk kebutuhan tab alternatif
-import 'package:ikanku/features/seller/data/models/product_model.dart';
-import 'package:ikanku/features/seller/widgets/inventory_item_tile.dart';
-import 'package:ikanku/features/seller/widgets/revenue_card.dart';
+import 'seller_edit_profile_page.dart'; 
 import 'package:ikanku/features/profile/data/models/user_model.dart';
 import 'package:ikanku/features/profile/data/datasources/profile_service.dart';
+
+// Catatan: Impor model produk dan service produk milikmu jika sudah ada
+// import 'package:ikanku/features/seller/data/models/product_model.dart';
 
 class SellerDashboardPage extends StatefulWidget {
   const SellerDashboardPage({super.key});
@@ -18,12 +18,55 @@ class SellerDashboardPage extends StatefulWidget {
 
 class _SellerDashboardPageState extends State<SellerDashboardPage> {
   late Future<UserModel> _sellerDataFuture;
-  int _currentIndex = 0; // State untuk melacak tab aktif
+  int _currentIndex = 0; 
+
+  // Simulasi repositori list produk untuk manajemen inventory dinamis
+  // Jika sudah ada ProductModel asli, ganti List<dynamic> menjadi List<ProductModel>
+  final List<dynamic> _registeredProducts = []; 
 
   @override
   void initState() {
     super.initState();
-    _sellerDataFuture = ProfileService.getProfile();
+    _loadSellerData();
+  }
+
+  void _loadSellerData() {
+    setState(() {
+      _sellerDataFuture = ProfileService.getProfile();
+    });
+  }
+
+  // GATEWAY STRATEGY: Menangkap data hasil edit profil secara aman menggunakan copyWith
+  Future<void> _navigateToEditProfile() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SellerEditProfilePage()),
+    );
+
+    // Jika user menekan tombol simpan dan mengembalikan Map data terupdate
+    if (result != null && result is Map<String, dynamic>) {
+      try {
+        UserModel currentProfile = await ProfileService.getProfile();
+        
+        // Memanfaatkan fungsi copyWith dari UserModel untuk memutasi data secara bersih
+        UserModel updatedProfile = currentProfile.copyWith(
+          shopName: result['shopName'],
+          shopAddress: result['shopAddress'],
+          phone: result['shopPhone'],
+          // Tambahkan field deskripsi atau shopCity jika diperlukan oleh modelmu
+          shopCity: result['shopCity'] ?? currentProfile.shopCity,
+          isSeller: true, 
+        );
+
+        // Simpan permanen perubahan objek baru ke penyimpanan lokal/service kamu
+        await ProfileService.saveProfile(updatedProfile);
+
+        // Segera muat ulang state tampilan dashboard dengan data terupdate
+        _loadSellerData();
+      } catch (e) {
+        debugPrint("Gagal memproses gateway update data: \$e");
+      }
+    }
   }
 
   @override
@@ -46,11 +89,10 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
 
         final seller = snapshot.data!;
 
-        // Mengatur daftar tampilan body berdasarkan index footer
-        final List<Widget> _pages = [
+        final List<Widget> pages = [
           _buildMainDashboardBody(seller),
           _buildProductManagementBody(),
-          const SellerSettingPage(), // Mengintegrasikan langsung halaman setting sebagai Tab Akun
+          const SellerSettingPage(), 
         ];
 
         return Scaffold(
@@ -69,22 +111,24 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                   actions: [
-                    IconButton(icon: const Icon(Icons.notifications_none_outlined), onPressed: () {}),
+                    IconButton(
+                      icon: const Icon(Icons.notifications_none_outlined), 
+                      onPressed: () {}
+                    ),
                     IconButton(
                       icon: const Icon(Icons.settings_outlined),
                       onPressed: () {
                         setState(() {
-                          _currentIndex = 2; // Pindah langsung ke Tab Pengaturan/Akun
+                          _currentIndex = 2; 
                         });
                       },
                     ),
                   ],
                 )
-              : null, // Biar AppBar halaman setting/produk tidak bertabrakan
+              : null, 
           body: SafeArea(
-            child: _pages[_currentIndex],
+            child: pages[_currentIndex],
           ),
-          // IMPLEMENTASI FOOTER NAVIGASI SELLER BARU
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (index) {
@@ -118,7 +162,6 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
-  // Memisahkan komponen utama dashboard ke widget tersendiri
   Widget _buildMainDashboardBody(UserModel seller) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -134,14 +177,15 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Inventory (42 items)",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              // Poin 4: Menampilkan jumlah riil berdasarkan panjang array produk
+              Text(
+                "Inventory (\${_registeredProducts.length} items)",
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               TextButton(
                 onPressed: () {
                   setState(() {
-                    _currentIndex = 1; // Pindah ke tab manajemen produk
+                    _currentIndex = 1; 
                   });
                 },
                 child: const Text("View All", style: TextStyle(color: Colors.blue)),
@@ -161,7 +205,6 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
-  // WIDGET PEMBANTU UI TETAP (Sama seperti kode Anda)
   Widget _buildProfileCard(UserModel seller) {
     return Row(
       children: [
@@ -189,11 +232,15 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                seller.shopName ?? "Nama Toko Belum Diatur",
+                seller.shopName == null || seller.shopName!.trim().isEmpty 
+                    ? "Nama Toko Belum Diatur" 
+                    : seller.shopName!,
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
               Text(
-                seller.shopAddress ?? "Lokasi Belum Diatur",
+                seller.shopAddress == null || seller.shopAddress!.trim().isEmpty 
+                    ? "Lokasi Belum Diatur" 
+                    : seller.shopAddress!,
                 style: const TextStyle(color: Colors.grey, fontSize: 13),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -217,12 +264,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
           ),
         ),
         ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SellerEditProfilePage()),
-            );
-          },
+          onPressed: _navigateToEditProfile, 
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue.shade50,
             foregroundColor: Colors.blue,
@@ -269,7 +311,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
           children: [
             Expanded(child: _buildMiniSummaryCard("ORDERS", "0", "0% growth", Colors.grey)),
             const SizedBox(width: 12),
-            Expanded(child: _buildMiniSummaryCard("PRODUCTS", "0", "Belum ada produk", Colors.blue)),
+            Expanded(child: _buildMiniSummaryCard("PRODUCTS", "\${_registeredProducts.length}", _registeredProducts.isEmpty ? "Belum ada produk" : "Produk Aktif", Colors.blue)),
           ],
         )
       ],
@@ -330,11 +372,22 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
   }
 
   Widget _buildInventoryList() {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 20),
-        child: Text("Belum ada inventaris ikan hias", style: TextStyle(color: Colors.grey)),
-      ),
+    if (_registeredProducts.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 20),
+          child: Text("Belum ada inventaris ikan hias", style: TextStyle(color: Colors.grey)),
+        ),
+      );
+    }
+    
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _registeredProducts.length,
+      itemBuilder: (context, index) {
+        return const SizedBox.shrink();
+      },
     );
   }
 }
